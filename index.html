@@ -3,69 +3,214 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Assistente Stefano V2</title>
+<title>Assistente Stefano V3</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <style>
-:root{--bg:#0b1020;--panel:#121a30;--panel2:#19233d;--text:#f3f6ff;--muted:#9eabc9;--accent:#7c9cff}
+:root{--bg:#0b1020;--panel:#121a30;--panel2:#19233d;--text:#f3f6ff;--muted:#9eabc9;--accent:#7c9cff;--green:#38c172}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,system-ui;background:var(--bg);color:var(--text)}
-.wrap{max-width:980px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.wrap{max-width:1050px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 h1{font-size:22px;margin:0}.badge{font-size:12px;color:#b9c4e3;background:#1b2748;padding:7px 10px;border-radius:999px}
 .card{background:var(--panel);border:1px solid #233052;border-radius:18px;overflow:hidden}
-#chat{height:58vh;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
-.msg{max-width:84%;padding:12px 14px;border-radius:16px;white-space:pre-wrap;line-height:1.45}
+#chat{height:56vh;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:88%;padding:12px 14px;border-radius:16px;white-space:pre-wrap;line-height:1.45}
 .user{align-self:flex-end;background:#2b4eb8}.assistant{align-self:flex-start;background:var(--panel2)}
 .composer{display:flex;gap:9px;padding:12px;border-top:1px solid #233052;background:#0e162b}
-textarea{flex:1;resize:none;min-height:52px;max-height:170px;border:1px solid #2b3a62;background:#111a31;color:white;border-radius:14px;padding:13px;font:inherit}
+textarea{flex:1;resize:none;min-height:58px;max-height:180px;border:1px solid #2b3a62;background:#111a31;color:white;border-radius:14px;padding:13px;font:inherit}
 button{border:0;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
-.send{background:var(--accent);color:#07112e}.secondary{background:#202c4a;color:white}.danger{background:#472232;color:#ffdbe3}
+.send{background:var(--accent);color:#07112e}.secondary{background:#202c4a;color:white}.danger{background:#472232;color:#ffdbe3}.success{background:#174b34;color:#d8ffe9}
 .tools,.filebar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tools{margin-top:12px}.filebar{padding:10px 12px;background:#0f1830;border-top:1px solid #233052}
 .hint{font-size:13px;color:var(--muted);margin-top:10px}.login{max-width:420px;margin:12vh auto;background:var(--panel);padding:22px;border-radius:18px;border:1px solid #253356}
 input[type=password]{width:100%;padding:13px;border-radius:12px;border:1px solid #2b3a62;background:#111a31;color:white;margin:10px 0}
-.hidden{display:none}@media(max-width:600px){#chat{height:61vh}.msg{max-width:92%}.badge{display:none}.wrap{padding:8px}}
+.hidden{display:none}.download-card{align-self:flex-start;background:#102c22;border:1px solid #235c46;border-radius:14px;padding:12px;max-width:88%}
+.download-card button{margin-top:8px}.small{font-size:12px;color:#b7c2de}
+@media(max-width:600px){#chat{height:58vh}.msg,.download-card{max-width:94%}.badge{display:none}.wrap{padding:8px}}
 </style>
 </head>
 <body>
 <div id="login" class="login">
-  <h2>🤖 Assistente Stefano V2</h2>
+  <h2>🤖 Assistente Stefano V3</h2>
   <p>Inserisci la password personale.</p>
   <input id="password" type="password" placeholder="Password">
   <button class="send" onclick="login()">Entra</button>
   <div id="loginError" class="hint"></div>
 </div>
+
 <div id="app" class="wrap hidden">
-  <div class="top"><h1>🤖 Assistente Stefano</h1><div class="badge">V2 • web + file + memoria</div></div>
+  <div class="top"><h1>🤖 Assistente Stefano</h1><div class="badge">V3 • web + PDF + immagini + file</div></div>
+
   <div class="card">
     <div id="chat"></div>
+
     <div class="filebar">
-      <input id="fileInput" type="file" multiple accept=".txt,.csv,.json,.md,.html,.htm,.xml,.log" class="hidden">
-      <button class="secondary" onclick="document.getElementById('fileInput').click()">📎 Allega file</button>
-      <span id="fileStatus" class="hint">Nessun file allegato</span>
-      <button id="clearFilesBtn" class="secondary hidden" onclick="clearFiles()">Rimuovi file</button>
+      <input id="fileInput" type="file" multiple accept=".txt,.csv,.json,.md,.html,.htm,.xml,.log,.pdf,image/*" class="hidden">
+      <button class="secondary" onclick="document.getElementById('fileInput').click()">📎 Allega file / PDF / immagine</button>
+      <span id="fileStatus" class="hint">Nessun allegato</span>
+      <button id="clearFilesBtn" class="secondary hidden" onclick="clearFiles()">Rimuovi allegati</button>
     </div>
+
     <div class="composer">
-      <textarea id="input" placeholder="Scrivi cosa vuoi che faccia..."></textarea>
+      <textarea id="input" placeholder="Es: analizza questo PDF, descrivi questa foto, crea un CSV..."></textarea>
       <button class="send" onclick="sendMsg()">Invia</button>
     </div>
   </div>
+
   <div class="tools">
     <button class="secondary" onclick="showMemories()">Memorie</button>
     <button class="secondary" onclick="clearChat()">Nuova conversazione</button>
     <button class="danger" onclick="logout()">Esci</button>
   </div>
-  <div class="hint">Per il web scrivi “cerca online…”. Supportati: TXT, CSV, JSON, MD, HTML, XML, LOG.</div>
+  <div class="hint">Puoi allegare PDF e immagini. Per creare un file scrivi, ad esempio: “creami un PDF con questo riepilogo” oppure “creami un CSV”.</div>
 </div>
-<script>
+
+<script type="module">
 const endpoint="https://tljicllyygtjhdrrcwcl.supabase.co/functions/v1/assistente-stefano";
-let pw=localStorage.getItem('assistente_pw')||'',attachedFiles=[];
+let pw=localStorage.getItem('assistente_pw')||'';
+let attachedFiles=[];
 const chat=document.getElementById('chat'),input=document.getElementById('input'),fileInput=document.getElementById('fileInput');
-function add(role,text){const d=document.createElement('div');d.className='msg '+role;d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
-async function api(action,data={}){const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,password:pw,...data})});let j;try{j=await r.json()}catch{throw new Error('Risposta non valida dal server')}if(!r.ok)throw new Error(j.error||'Errore');return j}
-async function login(){pw=document.getElementById('password').value;try{await api('history');localStorage.setItem('assistente_pw',pw);document.getElementById('login').classList.add('hidden');document.getElementById('app').classList.remove('hidden');await load()}catch(e){document.getElementById('loginError').textContent='Password errata o server non raggiungibile.'}}
-async function load(){const j=await api('history');chat.innerHTML='';j.messages.forEach(x=>add(x.role,x.content));if(!j.messages.length)add('assistant','Ciao Stefano. V2 pronta: memoria, ricerca web e file testuali/CSV.')}
-fileInput.addEventListener('change',async()=>{attachedFiles=[];let total=0;for(const f of [...fileInput.files]){if(f.size>700000){alert('File troppo grande: '+f.name);continue}const text=await f.text();total+=text.length;if(total>1200000){alert('Troppi dati allegati.');break}attachedFiles.push({name:f.name,type:f.type||'text/plain',content:text.slice(0,700000)})}updateFileStatus()})
-function updateFileStatus(){const s=document.getElementById('fileStatus'),c=document.getElementById('clearFilesBtn');if(attachedFiles.length){s.textContent=attachedFiles.length+' file: '+attachedFiles.map(f=>f.name).join(', ');c.classList.remove('hidden')}else{s.textContent='Nessun file allegato';c.classList.add('hidden')}}
+
+function add(role,text){
+  const d=document.createElement('div');d.className='msg '+role;d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+}
+
+function addDownload(file){
+  const d=document.createElement('div');d.className='download-card';
+  const title=document.createElement('div');title.innerHTML='<b>📄 '+escapeHtml(file.name)+'</b>';
+  const info=document.createElement('div');info.className='small';info.textContent='File creato dall’assistente';
+  const btn=document.createElement('button');btn.className='success';btn.textContent='Scarica';
+  btn.onclick=()=>downloadGenerated(file);
+  d.appendChild(title);d.appendChild(info);d.appendChild(btn);chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+}
+
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+
+async function api(action,data={}){
+  const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,password:pw,...data})});
+  let j;try{j=await r.json()}catch{throw new Error('Risposta non valida dal server')}
+  if(!r.ok)throw new Error(j.error||'Errore');
+  return j;
+}
+
+async function login(){
+  pw=document.getElementById('password').value;
+  try{
+    await api('history');localStorage.setItem('assistente_pw',pw);
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    await load();
+  }catch(e){document.getElementById('loginError').textContent='Password errata o server non raggiungibile.'}
+}
+
+async function load(){
+  const j=await api('history');chat.innerHTML='';
+  j.messages.forEach(x=>add(x.role,x.content));
+  if(!j.messages.length)add('assistant','Ciao Stefano. V3 pronta: web, PDF, immagini, memoria e creazione file.');
+}
+
+function fileToDataURL(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);
+  });
+}
+
+async function extractPdfText(file){
+  const pdfjsLib=await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs");
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs";
+  const data=new Uint8Array(await file.arrayBuffer());
+  const pdf=await pdfjsLib.getDocument({data}).promise;
+  let out='';
+  const maxPages=Math.min(pdf.numPages,80);
+  for(let p=1;p<=maxPages;p++){
+    const page=await pdf.getPage(p);
+    const content=await page.getTextContent();
+    const text=content.items.map(i=>i.str).join(' ');
+    out+=`\n--- PAGINA ${p} ---\n${text}`;
+    if(out.length>900000)break;
+  }
+  return out.slice(0,900000);
+}
+
+fileInput.addEventListener('change',async()=>{
+  attachedFiles=[];
+  let totalText=0;
+  const files=[...fileInput.files];
+
+  for(const f of files){
+    try{
+      if(f.type.startsWith('image/')){
+        if(f.size>5*1024*1024){alert('Immagine troppo grande: '+f.name+' (max 5 MB)');continue}
+        const dataUrl=await fileToDataURL(f);
+        attachedFiles.push({name:f.name,kind:'image',mime:f.type,dataUrl});
+      } else if(f.type==='application/pdf' || f.name.toLowerCase().endsWith('.pdf')){
+        if(f.size>12*1024*1024){alert('PDF troppo grande: '+f.name+' (max 12 MB)');continue}
+        const text=await extractPdfText(f);
+        totalText+=text.length;
+        attachedFiles.push({name:f.name,kind:'text',mime:'application/pdf',content:text});
+      } else {
+        if(f.size>900000){alert('File troppo grande: '+f.name);continue}
+        const text=await f.text();
+        totalText+=text.length;
+        attachedFiles.push({name:f.name,kind:'text',mime:f.type||'text/plain',content:text.slice(0,900000)});
+      }
+      if(totalText>1400000){alert('Troppi dati testuali allegati. Alcuni file potrebbero essere ignorati.');break}
+    }catch(e){alert('Errore leggendo '+f.name+': '+e.message)}
+  }
+  updateFileStatus();
+});
+
+function updateFileStatus(){
+  const s=document.getElementById('fileStatus'),c=document.getElementById('clearFilesBtn');
+  if(attachedFiles.length){
+    s.textContent=attachedFiles.length+' allegato/i: '+attachedFiles.map(f=>f.name).join(', ');
+    c.classList.remove('hidden');
+  }else{
+    s.textContent='Nessun allegato';c.classList.add('hidden');
+  }
+}
+
 function clearFiles(){attachedFiles=[];fileInput.value='';updateFileStatus()}
-async function sendMsg(){const t=input.value.trim();if(!t&&!attachedFiles.length)return;input.value='';add('user',t||'[Analizza i file allegati]');add('assistant','Sto elaborando…');const w=chat.lastChild;try{const j=await api('chat',{message:t,files:attachedFiles});w.remove();add('assistant',j.answer);clearFiles()}catch(e){w.remove();add('assistant','Errore: '+e.message)}}
-async function showMemories(){try{const j=await api('memories');alert(j.memories.length?j.memories.map((x,i)=>(i+1)+'. '+x.content).join('\n\n'):'Nessuna memoria salvata.')}catch(e){alert(e.message)}}
+
+async function sendMsg(){
+  const t=input.value.trim();if(!t&&!attachedFiles.length)return;
+  input.value='';add('user',t||'[Analizza gli allegati]');
+  add('assistant','Sto elaborando…');const wait=chat.lastChild;
+  try{
+    const j=await api('chat',{message:t,files:attachedFiles});
+    wait.remove();
+    if(j.answer)add('assistant',j.answer);
+    if(Array.isArray(j.generated_files))j.generated_files.forEach(addDownload);
+    clearFiles();
+  }catch(e){wait.remove();add('assistant','Errore: '+e.message)}
+}
+
+function downloadGenerated(file){
+  const name=file.name||'file.txt';
+  const ext=(name.split('.').pop()||'txt').toLowerCase();
+  const content=file.content||'';
+
+  if(ext==='pdf'){
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({unit:'mm',format:'a4'});
+    const margin=15,maxWidth=180;
+    const lines=doc.splitTextToSize(content,maxWidth);
+    let y=18;
+    for(const line of lines){
+      if(y>282){doc.addPage();y=18}
+      doc.text(line,margin,y);y+=6;
+    }
+    doc.save(name);
+    return;
+  }
+
+  const mimeMap={csv:'text/csv;charset=utf-8',json:'application/json;charset=utf-8',html:'text/html;charset=utf-8',md:'text/markdown;charset=utf-8',txt:'text/plain;charset=utf-8'};
+  const blob=new Blob([content],{type:mimeMap[ext]||'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+}
+
+async function showMemories(){
+  try{const j=await api('memories');alert(j.memories.length?j.memories.map((x,i)=>(i+1)+'. '+x.content).join('\n\n'):'Nessuna memoria salvata.')}catch(e){alert(e.message)}
+}
 async function clearChat(){if(!confirm('Cancellare la cronologia? Le memorie resteranno.'))return;await api('clear');await load()}
 function logout(){localStorage.removeItem('assistente_pw');location.reload()}
 input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg()}});
