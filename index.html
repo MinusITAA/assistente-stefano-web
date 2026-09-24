@@ -3,39 +3,44 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Assistente Stefano</title>
+<title>Assistente Stefano V2</title>
 <style>
 :root{--bg:#0b1020;--panel:#121a30;--panel2:#19233d;--text:#f3f6ff;--muted:#9eabc9;--accent:#7c9cff}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,system-ui;background:var(--bg);color:var(--text)}
 .wrap{max-width:980px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 h1{font-size:22px;margin:0}.badge{font-size:12px;color:#b9c4e3;background:#1b2748;padding:7px 10px;border-radius:999px}
 .card{background:var(--panel);border:1px solid #233052;border-radius:18px;overflow:hidden}
-#chat{height:62vh;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+#chat{height:58vh;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
 .msg{max-width:84%;padding:12px 14px;border-radius:16px;white-space:pre-wrap;line-height:1.45}
 .user{align-self:flex-end;background:#2b4eb8}.assistant{align-self:flex-start;background:var(--panel2)}
 .composer{display:flex;gap:9px;padding:12px;border-top:1px solid #233052;background:#0e162b}
 textarea{flex:1;resize:none;min-height:52px;max-height:170px;border:1px solid #2b3a62;background:#111a31;color:white;border-radius:14px;padding:13px;font:inherit}
 button{border:0;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
 .send{background:var(--accent);color:#07112e}.secondary{background:#202c4a;color:white}.danger{background:#472232;color:#ffdbe3}
-.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.hint{font-size:13px;color:var(--muted);margin-top:10px}
-.login{max-width:420px;margin:12vh auto;background:var(--panel);padding:22px;border-radius:18px;border:1px solid #253356}
-input{width:100%;padding:13px;border-radius:12px;border:1px solid #2b3a62;background:#111a31;color:white;margin:10px 0}
-@media(max-width:600px){#chat{height:67vh}.msg{max-width:92%}.badge{display:none}.wrap{padding:8px}}
+.tools,.filebar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tools{margin-top:12px}.filebar{padding:10px 12px;background:#0f1830;border-top:1px solid #233052}
+.hint{font-size:13px;color:var(--muted);margin-top:10px}.login{max-width:420px;margin:12vh auto;background:var(--panel);padding:22px;border-radius:18px;border:1px solid #253356}
+input[type=password]{width:100%;padding:13px;border-radius:12px;border:1px solid #2b3a62;background:#111a31;color:white;margin:10px 0}
+.hidden{display:none}@media(max-width:600px){#chat{height:61vh}.msg{max-width:92%}.badge{display:none}.wrap{padding:8px}}
 </style>
 </head>
 <body>
 <div id="login" class="login">
-  <h2>🤖 Assistente Stefano</h2>
+  <h2>🤖 Assistente Stefano V2</h2>
   <p>Inserisci la password personale.</p>
   <input id="password" type="password" placeholder="Password">
   <button class="send" onclick="login()">Entra</button>
   <div id="loginError" class="hint"></div>
 </div>
-
-<div id="app" class="wrap" style="display:none">
-  <div class="top"><h1>🤖 Assistente Stefano</h1><div class="badge">Kimi • memoria attiva</div></div>
+<div id="app" class="wrap hidden">
+  <div class="top"><h1>🤖 Assistente Stefano</h1><div class="badge">V2 • web + file + memoria</div></div>
   <div class="card">
     <div id="chat"></div>
+    <div class="filebar">
+      <input id="fileInput" type="file" multiple accept=".txt,.csv,.json,.md,.html,.htm,.xml,.log" class="hidden">
+      <button class="secondary" onclick="document.getElementById('fileInput').click()">📎 Allega file</button>
+      <span id="fileStatus" class="hint">Nessun file allegato</span>
+      <button id="clearFilesBtn" class="secondary hidden" onclick="clearFiles()">Rimuovi file</button>
+    </div>
     <div class="composer">
       <textarea id="input" placeholder="Scrivi cosa vuoi che faccia..."></textarea>
       <button class="send" onclick="sendMsg()">Invia</button>
@@ -46,92 +51,24 @@ input{width:100%;padding:13px;border-radius:12px;border:1px solid #2b3a62;backgr
     <button class="secondary" onclick="clearChat()">Nuova conversazione</button>
     <button class="danger" onclick="logout()">Esci</button>
   </div>
-  <div class="hint">Scrivi “Ricorda che ...” per salvare una memoria.</div>
+  <div class="hint">Per il web scrivi “cerca online…”. Supportati: TXT, CSV, JSON, MD, HTML, XML, LOG.</div>
 </div>
-
 <script>
-const endpoint='https://tljicllyygtjhdrrcwcl.supabase.co/functions/v1/assistente-stefano';
-let pw=localStorage.getItem('assistente_pw')||'';
-const chat=document.getElementById('chat'), input=document.getElementById('input');
-
-function add(role,text){
-  const d=document.createElement('div');
-  d.className='msg '+role;
-  d.textContent=text;
-  chat.appendChild(d);
-  chat.scrollTop=chat.scrollHeight;
-}
-
-async function api(action,data={}){
-  const r=await fetch(endpoint,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({action,password:pw,...data})
-  });
-  let j;
-  try{j=await r.json()}catch{throw new Error('Risposta non valida dal server')}
-  if(!r.ok) throw new Error(j.error||'Errore');
-  return j;
-}
-
-async function login(){
-  pw=document.getElementById('password').value;
-  try{
-    await api('history');
-    localStorage.setItem('assistente_pw',pw);
-    document.getElementById('login').style.display='none';
-    document.getElementById('app').style.display='block';
-    document.getElementById('loginError').textContent='';
-    await load();
-  }catch(e){
-    document.getElementById('loginError').textContent='Password errata o server non raggiungibile.';
-  }
-}
-
-async function load(){
-  const j=await api('history');
-  chat.innerHTML='';
-  j.messages.forEach(x=>add(x.role,x.content));
-  if(!j.messages.length)add('assistant','Ciao Stefano. Sono pronto: dimmi cosa vuoi che faccia.');
-}
-
-async function sendMsg(){
-  const t=input.value.trim(); if(!t)return;
-  input.value=''; add('user',t); add('assistant','Sto elaborando…');
-  const w=chat.lastChild;
-  try{
-    const j=await api('chat',{message:t});
-    w.remove(); add('assistant',j.answer);
-  }catch(e){
-    w.remove(); add('assistant','Errore: '+e.message);
-  }
-}
-
-async function showMemories(){
-  try{
-    const j=await api('memories');
-    alert(j.memories.length ? j.memories.map((x,i)=>(i+1)+'. '+x.content).join('\n\n') : 'Nessuna memoria salvata.');
-  }catch(e){alert(e.message)}
-}
-
-async function clearChat(){
-  if(!confirm('Cancellare la cronologia? Le memorie resteranno.'))return;
-  await api('clear'); await load();
-}
-
-function logout(){
-  localStorage.removeItem('assistente_pw');
-  location.reload();
-}
-
-input.addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg()}
-});
-
-if(pw){
-  document.getElementById('password').value=pw;
-  login();
-}
+const endpoint="https://tljicllyygtjhdrrcwcl.supabase.co/functions/v1/assistente-stefano";
+let pw=localStorage.getItem('assistente_pw')||'',attachedFiles=[];
+const chat=document.getElementById('chat'),input=document.getElementById('input'),fileInput=document.getElementById('fileInput');
+function add(role,text){const d=document.createElement('div');d.className='msg '+role;d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
+async function api(action,data={}){const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,password:pw,...data})});let j;try{j=await r.json()}catch{throw new Error('Risposta non valida dal server')}if(!r.ok)throw new Error(j.error||'Errore');return j}
+async function login(){pw=document.getElementById('password').value;try{await api('history');localStorage.setItem('assistente_pw',pw);document.getElementById('login').classList.add('hidden');document.getElementById('app').classList.remove('hidden');await load()}catch(e){document.getElementById('loginError').textContent='Password errata o server non raggiungibile.'}}
+async function load(){const j=await api('history');chat.innerHTML='';j.messages.forEach(x=>add(x.role,x.content));if(!j.messages.length)add('assistant','Ciao Stefano. V2 pronta: memoria, ricerca web e file testuali/CSV.')}
+fileInput.addEventListener('change',async()=>{attachedFiles=[];let total=0;for(const f of [...fileInput.files]){if(f.size>700000){alert('File troppo grande: '+f.name);continue}const text=await f.text();total+=text.length;if(total>1200000){alert('Troppi dati allegati.');break}attachedFiles.push({name:f.name,type:f.type||'text/plain',content:text.slice(0,700000)})}updateFileStatus()})
+function updateFileStatus(){const s=document.getElementById('fileStatus'),c=document.getElementById('clearFilesBtn');if(attachedFiles.length){s.textContent=attachedFiles.length+' file: '+attachedFiles.map(f=>f.name).join(', ');c.classList.remove('hidden')}else{s.textContent='Nessun file allegato';c.classList.add('hidden')}}
+function clearFiles(){attachedFiles=[];fileInput.value='';updateFileStatus()}
+async function sendMsg(){const t=input.value.trim();if(!t&&!attachedFiles.length)return;input.value='';add('user',t||'[Analizza i file allegati]');add('assistant','Sto elaborando…');const w=chat.lastChild;try{const j=await api('chat',{message:t,files:attachedFiles});w.remove();add('assistant',j.answer);clearFiles()}catch(e){w.remove();add('assistant','Errore: '+e.message)}}
+async function showMemories(){try{const j=await api('memories');alert(j.memories.length?j.memories.map((x,i)=>(i+1)+'. '+x.content).join('\n\n'):'Nessuna memoria salvata.')}catch(e){alert(e.message)}}
+async function clearChat(){if(!confirm('Cancellare la cronologia? Le memorie resteranno.'))return;await api('clear');await load()}
+function logout(){localStorage.removeItem('assistente_pw');location.reload()}
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg()}});
+if(pw){document.getElementById('password').value=pw;login()}
 </script>
-</body>
-</html>
+</body></html>
