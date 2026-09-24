@@ -73,12 +73,55 @@ function add(role,text){
 }
 
 function addDownload(file){
-  const d=document.createElement('div');d.className='download-card';
-  const title=document.createElement('div');title.innerHTML='<b>📄 '+escapeHtml(file.name)+'</b>';
-  const info=document.createElement('div');info.className='small';info.textContent='File creato dall’assistente';
-  const btn=document.createElement('button');btn.className='success';btn.textContent='Scarica';
-  btn.onclick=()=>downloadGenerated(file);
-  d.appendChild(title);d.appendChild(info);d.appendChild(btn);chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+  const d=document.createElement('div');
+  d.className='download-card';
+
+  const title=document.createElement('div');
+  title.innerHTML='<b>📄 '+escapeHtml(file.name)+'</b>';
+
+  const info=document.createElement('div');
+  info.className='small';
+  info.textContent='File creato dall’assistente';
+
+  const link=document.createElement('a');
+  link.className='success';
+  link.textContent='Scarica';
+  link.style.display='inline-block';
+  link.style.marginTop='8px';
+  link.style.textDecoration='none';
+  link.style.padding='10px 14px';
+  link.style.borderRadius='12px';
+  link.style.fontWeight='700';
+  link.style.cursor='pointer';
+
+  const name=file.name||'file.txt';
+  const ext=(name.split('.').pop()||'txt').toLowerCase();
+  const content=file.content||'';
+
+  let blob;
+  if(ext==='pdf'){
+    blob=buildSimplePdf(content);
+  }else{
+    const mimeMap={
+      csv:'text/csv;charset=utf-8',
+      json:'application/json;charset=utf-8',
+      html:'text/html;charset=utf-8',
+      md:'text/markdown;charset=utf-8',
+      txt:'text/plain;charset=utf-8'
+    };
+    blob=new Blob([content],{type:mimeMap[ext]||'application/octet-stream'});
+  }
+
+  const url=URL.createObjectURL(blob);
+  link.href=url;
+  link.download=name;
+  link.target='_blank';
+
+  d.appendChild(title);
+  d.appendChild(info);
+  d.appendChild(link);
+  chat.appendChild(d);
+  chat.scrollTop=chat.scrollHeight;
 }
 
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
