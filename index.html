@@ -1,371 +1,169 @@
 <!doctype html>
 <html lang="it">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Assistente Stefano V3</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Assistente Stefano FULL 1.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
 <style>
-:root{--bg:#0b1020;--panel:#121a30;--panel2:#19233d;--text:#f3f6ff;--muted:#9eabc9;--accent:#7c9cff;--green:#38c172}
-*{box-sizing:border-box}body{margin:0;font-family:Arial,system-ui;background:var(--bg);color:var(--text)}
-.wrap{max-width:1050px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-h1{font-size:22px;margin:0}.badge{font-size:12px;color:#b9c4e3;background:#1b2748;padding:7px 10px;border-radius:999px}
-.card{background:var(--panel);border:1px solid #233052;border-radius:18px;overflow:hidden}
-#chat{height:56vh;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
-.msg{max-width:88%;padding:12px 14px;border-radius:16px;white-space:pre-wrap;line-height:1.45}
-.user{align-self:flex-end;background:#2b4eb8}.assistant{align-self:flex-start;background:var(--panel2)}
-.composer{display:flex;gap:9px;padding:12px;border-top:1px solid #233052;background:#0e162b}
-textarea{flex:1;resize:none;min-height:58px;max-height:180px;border:1px solid #2b3a62;background:#111a31;color:white;border-radius:14px;padding:13px;font:inherit}
-button{border:0;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
-.send{background:var(--accent);color:#07112e}.secondary{background:#202c4a;color:white}.danger{background:#472232;color:#ffdbe3}.success{background:#174b34;color:#d8ffe9}
-.tools,.filebar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tools{margin-top:12px}.filebar{padding:10px 12px;background:#0f1830;border-top:1px solid #233052}
-.hint{font-size:13px;color:var(--muted);margin-top:10px}.login{max-width:420px;margin:12vh auto;background:var(--panel);padding:22px;border-radius:18px;border:1px solid #253356}
-input[type=password]{width:100%;padding:13px;border-radius:12px;border:1px solid #2b3a62;background:#111a31;color:white;margin:10px 0}
-.hidden{display:none}.download-card{align-self:flex-start;background:#102c22;border:1px solid #235c46;border-radius:14px;padding:12px;max-width:88%}
-.download-card button{margin-top:8px}.small{font-size:12px;color:#b7c2de}
-@media(max-width:600px){#chat{height:58vh}.msg,.download-card{max-width:94%}.badge{display:none}.wrap{padding:8px}}
+:root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,system-ui;background:var(--bg);color:var(--t)}
+.app{max-width:1180px;margin:auto;padding:12px}.top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}
+h1{font-size:22px;margin:0}.badge{font-size:12px;background:#1b2748;padding:7px 10px;border-radius:999px}
+.grid{display:grid;grid-template-columns:230px 1fr;gap:12px}.side,.card{background:var(--p);border:1px solid #233052;border-radius:16px}
+.side{padding:10px;height:calc(100vh - 75px);overflow:auto}.side button,.side select{width:100%;margin:4px 0}
+.card{overflow:hidden}.chat{height:58vh;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;padding:11px 13px;border-radius:15px;white-space:pre-wrap;line-height:1.45}.user{align-self:flex-end;background:#2b4eb8}.assistant{align-self:flex-start;background:var(--p2)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.bar{padding:10px 12px;border-top:1px solid #233052;background:#0f1830}
+textarea{width:100%;min-height:68px;max-height:180px;resize:none;background:#111a31;color:white;border:1px solid #2b3a62;border-radius:13px;padding:12px;font:inherit}
+button,select,input{border:0;border-radius:10px;padding:9px 11px;font:inherit}button{font-weight:700;cursor:pointer}.primary{background:var(--a);color:#07112e}.secondary{background:#202c4a;color:white}.good{background:var(--g);color:#d8ffe9}.danger{background:#472232;color:#ffdbe3}
+.small{font-size:12px;color:var(--m)}.hidden{display:none}.download{align-self:flex-start;background:#102c22;border:1px solid #235c46;padding:10px;border-radius:12px}
+a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-decoration:none;padding:8px 11px;border-radius:9px;font-weight:700}
+.panel{margin:8px 0;padding:8px;background:#0f1830;border-radius:10px}.login{max-width:420px;margin:12vh auto;background:var(--p);padding:22px;border-radius:18px}
+@media(max-width:780px){.grid{grid-template-columns:1fr}.side{height:auto}.chat{height:54vh}}
 </style>
 </head>
 <body>
 <div id="login" class="login">
-  <h2>🤖 Assistente Stefano V3</h2>
-  <p>Inserisci la password personale.</p>
-  <input id="password" type="password" placeholder="Password">
-  <button class="send" onclick="login()">Entra</button>
-  <div id="loginError" class="hint"></div>
+<h2>🤖 Assistente Stefano FULL</h2><input id="pw" type="password" placeholder="Password">
+<button class="primary" onclick="login()">Entra</button><div id="loginErr" class="small"></div>
 </div>
 
-<div id="app" class="wrap hidden">
-  <div class="top"><h1>🤖 Assistente Stefano</h1><div class="badge">V3 • web + PDF + immagini + file</div></div>
+<div id="app" class="app hidden">
+<div class="top"><h1>🤖 Assistente Stefano FULL 1.0</h1><div class="badge">modulare • memoria • web • coding • grafica</div></div>
+<div class="grid">
+<aside class="side">
+  <div class="small">Modalità</div>
+  <select id="mode">
+    <option value="auto">Auto</option><option value="general">Generale</option>
+    <option value="developer">Developer</option><option value="graphics">Grafica/Volantini</option>
+    <option value="admin">Amministrazione</option><option value="commercial">Commerciale</option>
+    <option value="research">Ricerca</option>
+  </select>
+  <label class="panel"><input id="deep" type="checkbox"> Deep mode (planner + reviewer)</label>
+  <label class="panel"><input id="saveLib" type="checkbox"> Salva allegati nella libreria</label>
 
-  <div class="card">
-    <div id="chat"></div>
+  <div class="small">Progetto attivo</div>
+  <select id="project"><option value="">Nessun progetto</option></select>
+  <button class="secondary" onclick="newProject()">+ Nuovo progetto</button>
+  <button class="secondary" onclick="showTasks()">☑ Attività</button>
+  <button class="secondary" onclick="newTask()">+ Nuova attività</button>
+  <button class="secondary" onclick="showLibrary()">📚 Libreria</button>
+  <button class="secondary" onclick="showMemories()">🧠 Memorie</button>
+  <button class="secondary" onclick="showStrategies()">📈 Strategie apprese</button>
+  <button class="danger" onclick="clearChat()">Nuova conversazione</button>
+  <button class="danger" onclick="logout()">Esci</button>
+  <div class="panel small">FULL 1.0 non esegue ancora codice in sandbox e non invia email/calendario autonomamente.</div>
+</aside>
 
-    <div class="filebar">
-      <input id="fileInput" type="file" multiple accept=".txt,.csv,.json,.md,.html,.htm,.xml,.log,.pdf,image/*" class="hidden">
-      <button class="secondary" onclick="document.getElementById('fileInput').click()">📎 Allega file / PDF / immagine</button>
-      <span id="fileStatus" class="hint">Nessun allegato</span>
-      <button id="clearFilesBtn" class="secondary hidden" onclick="clearFiles()">Rimuovi allegati</button>
-    </div>
-
-    <div class="composer">
-      <textarea id="input" placeholder="Es: analizza questo PDF, descrivi questa foto, crea un CSV..."></textarea>
-      <button class="send" onclick="sendMsg()">Invia</button>
-    </div>
-  </div>
-
-  <div class="tools">
-    <button class="secondary" onclick="showMemories()">Memorie</button>
-    <button class="secondary" onclick="clearChat()">Nuova conversazione</button>
-    <button class="danger" onclick="logout()">Esci</button>
-  </div>
-  <div class="hint">Puoi allegare PDF e immagini. Per creare un file scrivi, ad esempio: “creami un PDF con questo riepilogo” oppure “creami un CSV”.</div>
+<main class="card">
+<div id="chat" class="chat"></div>
+<div class="bar row">
+<input id="file" type="file" multiple class="hidden" accept=".txt,.csv,.json,.md,.html,.htm,.xml,.log,.pdf,.py,.js,.ts,.tsx,.jsx,.css,.sql,.ps1,.sh,.bat,.cmd,.yaml,.yml,.toml,.ini,.java,.c,.cpp,.cs,.go,.rs,.php,.rb,image/*">
+<button class="secondary" onclick="document.getElementById('file').click()">📎 Allega</button>
+<span id="fileStatus" class="small">Nessun allegato</span>
+<button id="clearFiles" class="secondary hidden" onclick="clearAttached()">Rimuovi</button>
+</div>
+<div class="bar">
+<textarea id="input" placeholder="Chiedimi qualsiasi cosa: ricerca, codice, PDF, volantino, progetto, analisi..."></textarea>
+<div class="row" style="margin-top:8px">
+<button class="primary" onclick="sendMsg()">Invia</button>
+<span class="small">Shift+Enter = nuova riga</span>
+</div>
+</div>
+</main>
+</div>
 </div>
 
 <script type="module">
 const endpoint="https://tljicllyygtjhdrrcwcl.supabase.co/functions/v1/assistente-stefano";
-let pw=localStorage.getItem('assistente_pw')||'';
-let attachedFiles=[];
-const chat=document.getElementById('chat'),input=document.getElementById('input'),fileInput=document.getElementById('fileInput');
-
-function add(role,text){
-  const d=document.createElement('div');d.className='msg '+role;d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
-}
-
-function addDownload(file){
-  const d=document.createElement('div');
-  d.className='download-card';
-
-  const title=document.createElement('div');
-  title.innerHTML='<b>📄 '+escapeHtml(file.name)+'</b>';
-
-  const info=document.createElement('div');
-  info.className='small';
-  info.textContent='File creato dall’assistente';
-
-  const link=document.createElement('a');
-  link.className='success';
-  link.textContent='Scarica';
-  link.style.display='inline-block';
-  link.style.marginTop='8px';
-  link.style.textDecoration='none';
-  link.style.padding='10px 14px';
-  link.style.borderRadius='12px';
-  link.style.fontWeight='700';
-  link.style.cursor='pointer';
-
-  const name=file.name||'file.txt';
-  const ext=(name.split('.').pop()||'txt').toLowerCase();
-  const content=file.content||'';
-
-  let blob;
-  if(ext==='pdf'){
-    blob=buildSimplePdf(content);
-  }else{
-    const mimeMap={
-      csv:'text/csv;charset=utf-8',
-      json:'application/json;charset=utf-8',
-      html:'text/html;charset=utf-8',
-      md:'text/markdown;charset=utf-8',
-      txt:'text/plain;charset=utf-8'
-    };
-    blob=new Blob([content],{type:mimeMap[ext]||'application/octet-stream'});
-  }
-
-  const url=URL.createObjectURL(blob);
-  link.href=url;
-  link.download=name;
-  link.target='_blank';
-
-  d.appendChild(title);
-  d.appendChild(info);
-  d.appendChild(link);
-  chat.appendChild(d);
-  chat.scrollTop=chat.scrollHeight;
-}
-
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+let password=localStorage.getItem('assistente_pw')||'',attached=[],lastAssistantId=null;
+const $=id=>document.getElementById(id), chat=$('chat');
 
 async function api(action,data={}){
-  const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,password:pw,...data})});
-  let j;try{j=await r.json()}catch{throw new Error('Risposta non valida dal server')}
-  if(!r.ok)throw new Error(j.error||'Errore');
-  return j;
+ const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,password,...data})});
+ const j=await r.json().catch(()=>({error:'Risposta non valida'})); if(!r.ok)throw new Error(j.error||'Errore'); return j;
 }
-
+function add(role,text,id=null){
+ const d=document.createElement('div');d.className='msg '+role;d.textContent=text;chat.appendChild(d);
+ if(role==='assistant'&&id){
+   const row=document.createElement('div');row.className='row';
+   const up=document.createElement('button');up.className='secondary';up.textContent='👍';
+   const dn=document.createElement('button');dn.className='secondary';dn.textContent='👎';
+   up.onclick=()=>feedback(id,1);dn.onclick=()=>feedback(id,-1);
+   row.append(up,dn);d.appendChild(document.createElement('br'));d.appendChild(row);
+ }
+ chat.scrollTop=chat.scrollHeight;
+}
+function addDownload(f){
+ const d=document.createElement('div');d.className='download';
+ const title=document.createElement('b');title.textContent='📄 '+f.name;d.appendChild(title);
+ const a=document.createElement('a');a.className='dl';a.textContent='Scarica';
+ const ext=(f.name.split('.').pop()||'txt').toLowerCase();
+ const mime={csv:'text/csv',json:'application/json',html:'text/html',css:'text/css',js:'text/javascript',ts:'text/plain',py:'text/x-python',sql:'text/plain',md:'text/markdown',txt:'text/plain',pdf:'text/plain'};
+ const blob=new Blob([f.content||''],{type:(mime[ext]||'text/plain')+';charset=utf-8'});
+ a.href=URL.createObjectURL(blob);a.download=f.name;a.target='_blank';d.appendChild(document.createElement('br'));d.appendChild(a);chat.appendChild(d);
+}
 async function login(){
-  pw=document.getElementById('password').value;
-  try{
-    await api('history');localStorage.setItem('assistente_pw',pw);
-    document.getElementById('login').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    await load();
-  }catch(e){document.getElementById('loginError').textContent='Password errata o server non raggiungibile.'}
+ password=$('pw').value;
+ try{await api('history');localStorage.setItem('assistente_pw',password);$('login').classList.add('hidden');$('app').classList.remove('hidden');await Promise.all([load(),loadProjects()])}
+ catch(e){$('loginErr').textContent='Password errata o server non raggiungibile.'}
 }
-
 async function load(){
-  const j=await api('history');chat.innerHTML='';
-  j.messages.forEach(x=>add(x.role,x.content));
-  if(!j.messages.length)add('assistant','Ciao Stefano. V3 pronta: web, PDF, immagini, memoria e creazione file.');
+ const j=await api('history');chat.innerHTML='';j.messages.forEach(x=>add(x.role,x.content,x.role==='assistant'?x.id:null));
+ if(!j.messages.length)add('assistant','Ciao Stefano. FULL 1.0 pronta.');
 }
-
-function fileToDataURL(file){
-  return new Promise((resolve,reject)=>{
-    const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);
-  });
+async function loadProjects(){
+ const j=await api('projects'),s=$('project');s.innerHTML='<option value="">Nessun progetto</option>';
+ j.projects.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;s.appendChild(o)})
 }
-
-async function extractPdfText(file){
-  const pdfjsLib=await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs");
-  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs";
-  const data=new Uint8Array(await file.arrayBuffer());
-  const pdf=await pdfjsLib.getDocument({data}).promise;
-  let out='';
-  const maxPages=Math.min(pdf.numPages,80);
-  for(let p=1;p<=maxPages;p++){
-    const page=await pdf.getPage(p);
-    const content=await page.getTextContent();
-    const text=content.items.map(i=>i.str).join(' ');
-    out+=`\n--- PAGINA ${p} ---\n${text}`;
-    if(out.length>900000)break;
-  }
-  return out.slice(0,900000);
+async function newProject(){
+ const name=prompt('Nome progetto:');if(!name)return;const desc=prompt('Descrizione (opzionale):')||'';
+ await api('project_create',{name,description:desc});await loadProjects()
 }
-
-fileInput.addEventListener('change',async()=>{
-  attachedFiles=[];
-  let totalText=0;
-  const files=[...fileInput.files];
-
-  for(const f of files){
-    try{
-      if(f.type.startsWith('image/')){
-        if(f.size>5*1024*1024){alert('Immagine troppo grande: '+f.name+' (max 5 MB)');continue}
-        const dataUrl=await fileToDataURL(f);
-        attachedFiles.push({name:f.name,kind:'image',mime:f.type,dataUrl});
-      } else if(f.type==='application/pdf' || f.name.toLowerCase().endsWith('.pdf')){
-        if(f.size>12*1024*1024){alert('PDF troppo grande: '+f.name+' (max 12 MB)');continue}
-        const text=await extractPdfText(f);
-        totalText+=text.length;
-        attachedFiles.push({name:f.name,kind:'text',mime:'application/pdf',content:text});
-      } else {
-        if(f.size>900000){alert('File troppo grande: '+f.name);continue}
-        const text=await f.text();
-        totalText+=text.length;
-        attachedFiles.push({name:f.name,kind:'text',mime:f.type||'text/plain',content:text.slice(0,900000)});
-      }
-      if(totalText>1400000){alert('Troppi dati testuali allegati. Alcuni file potrebbero essere ignorati.');break}
-    }catch(e){alert('Errore leggendo '+f.name+': '+e.message)}
-  }
-  updateFileStatus();
+async function newTask(){
+ const title=prompt('Attività:');if(!title)return;
+ await api('task_create',{title,project_id:$('project').value||null});alert('Attività creata.')
+}
+async function showTasks(){
+ const j=await api('tasks',{project_id:$('project').value||null});
+ alert(j.tasks.length?j.tasks.map(t=>`${t.status==='done'?'✓':'○'} ${t.title}`).join('\n'):'Nessuna attività.')
+}
+async function showLibrary(){
+ const j=await api('library_list',{project_id:$('project').value||null});
+ alert(j.documents.length?j.documents.map(d=>'• '+d.name).join('\n'):'Libreria vuota.')
+}
+async function showMemories(){const j=await api('memories');alert(j.memories.length?j.memories.map(m=>'• '+m.content).join('\n\n'):'Nessuna memoria.')}
+async function showStrategies(){const j=await api('strategies');alert(j.strategies.length?j.strategies.map(s=>`• [${s.category}] ${s.content}`).join('\n\n'):'Nessuna strategia appresa.')}
+async function feedback(id,rating){const note=prompt(rating>0?'Cosa ti è piaciuto? (opzionale)':'Cosa deve migliorare?')||'';await api('feedback',{message_id:id,rating,note});alert('Feedback salvato.')}
+async function extractPdf(file){
+ const pdfjs=await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs");
+ pdfjs.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs";
+ const pdf=await pdfjs.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;let out='';
+ for(let p=1;p<=Math.min(pdf.numPages,80);p++){const pg=await pdf.getPage(p),c=await pg.getTextContent();out+=`\n--- PAGINA ${p} ---\n`+c.items.map(i=>i.str).join(' ');if(out.length>900000)break}
+ return out;
+}
+function dataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+$('file').addEventListener('change',async()=>{
+ attached=[];for(const f of [...$('file').files]){
+   try{
+    if(f.type.startsWith('image/'))attached.push({name:f.name,kind:'image',mime:f.type,dataUrl:await dataURL(f)});
+    else if(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'))attached.push({name:f.name,kind:'text',mime:'application/pdf',content:await extractPdf(f)});
+    else attached.push({name:f.name,kind:'text',mime:f.type||'text/plain',content:(await f.text()).slice(0,900000)});
+   }catch(e){alert('Errore leggendo '+f.name)}
+ }
+ $('fileStatus').textContent=attached.length?attached.map(x=>x.name).join(', '):'Nessun allegato';$('clearFiles').classList.toggle('hidden',!attached.length)
 });
-
-function updateFileStatus(){
-  const s=document.getElementById('fileStatus'),c=document.getElementById('clearFilesBtn');
-  if(attachedFiles.length){
-    s.textContent=attachedFiles.length+' allegato/i: '+attachedFiles.map(f=>f.name).join(', ');
-    c.classList.remove('hidden');
-  }else{
-    s.textContent='Nessun allegato';c.classList.add('hidden');
-  }
-}
-
-function clearFiles(){attachedFiles=[];fileInput.value='';updateFileStatus()}
-
+function clearAttached(){attached=[];$('file').value='';$('fileStatus').textContent='Nessun allegato';$('clearFiles').classList.add('hidden')}
 async function sendMsg(){
-  const t=input.value.trim();if(!t&&!attachedFiles.length)return;
-  input.value='';add('user',t||'[Analizza gli allegati]');
-  add('assistant','Sto elaborando…');const wait=chat.lastChild;
-  try{
-    const j=await api('chat',{message:t,files:attachedFiles});
-    wait.remove();
-    if(j.answer)add('assistant',j.answer);
-    if(Array.isArray(j.generated_files))j.generated_files.forEach(addDownload);
-    clearFiles();
-  }catch(e){wait.remove();add('assistant','Errore: '+e.message)}
+ const text=$('input').value.trim();if(!text&&!attached.length)return;$('input').value='';add('user',text||'[Analizza allegati]');add('assistant','Sto elaborando…');const wait=chat.lastChild;
+ try{
+  const j=await api('chat',{message:text,files:attached,mode:$('mode').value,deep:$('deep').checked,project_id:$('project').value||null,save_to_library:$('saveLib').checked});
+  wait.remove();add('assistant',j.answer,j.message_id);(j.generated_files||[]).forEach(addDownload);clearAttached()
+ }catch(e){wait.remove();add('assistant','Errore: '+e.message)}
 }
-
-function pdfSafeText(s){
-  return String(s)
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^\x20-\x7E\n\r\t]/g,'?')
-    .replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
-}
-
-function wrapText(text,maxChars=88){
-  const out=[];
-  for(const raw of String(text).replace(/\r/g,'').split('\n')){
-    if(raw===''){out.push('');continue}
-    let line='';
-    for(const word of raw.split(/\s+/)){
-      if(!line){line=word}
-      else if((line+' '+word).length<=maxChars){line+=' '+word}
-      else{out.push(line);line=word}
-    }
-    if(line)out.push(line);
-  }
-  return out;
-}
-
-function buildSimplePdf(content){
-  const lines=wrapText(content,88);
-  const linesPerPage=52;
-  const pages=[];
-  for(let i=0;i<lines.length;i+=linesPerPage)pages.push(lines.slice(i,i+linesPerPage));
-  if(!pages.length)pages.push(['']);
-
-  const objects=[];
-  const add=obj=>{objects.push(obj);return objects.length};
-
-  const fontObj=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
-  const pageObjNums=[];
-  const contentObjNums=[];
-
-  // Reserve page/content objects first
-  for(let i=0;i<pages.length;i++){
-    contentObjNums.push(add(''));
-    pageObjNums.push(add(''));
-  }
-
-  const pagesObjNum=add('');
-  const catalogObjNum=add(`<< /Type /Catalog /Pages ${pagesObjNum} 0 R >>`);
-
-  pages.forEach((pageLines,i)=>{
-    let stream='BT\n/F1 11 Tf\n50 800 Td\n';
-    pageLines.forEach((line,idx)=>{
-      const safe=pdfSafeText(line);
-      if(idx===0)stream+=`(${safe}) Tj\n`;
-      else stream+=`0 -14 Td\n(${safe}) Tj\n`;
-    });
-    stream+='ET';
-    objects[contentObjNums[i]-1]=`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
-    objects[pageObjNums[i]-1]=`<< /Type /Page /Parent ${pagesObjNum} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontObj} 0 R >> >> /Contents ${contentObjNums[i]} 0 R >>`;
-  });
-
-  objects[pagesObjNum-1]=`<< /Type /Pages /Kids [${pageObjNums.map(n=>`${n} 0 R`).join(' ')}] /Count ${pageObjNums.length} >>`;
-
-  let pdf='%PDF-1.4\n';
-  const offsets=[0];
-  for(let i=0;i<objects.length;i++){
-    offsets.push(pdf.length);
-    pdf+=`${i+1} 0 obj\n${objects[i]}\nendobj\n`;
-  }
-  const xref=pdf.length;
-  pdf+=`xref\n0 ${objects.length+1}\n`;
-  pdf+='0000000000 65535 f \n';
-  for(let i=1;i<offsets.length;i++)pdf+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
-  pdf+=`trailer\n<< /Size ${objects.length+1} /Root ${catalogObjNum} 0 R >>\nstartxref\n${xref}\n%%EOF`;
-  return new Blob([pdf],{type:'application/pdf'});
-}
-
-function fallbackDownload(blob,name){
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download=name;
-  a.rel='noopener';
-  document.body.appendChild(a);
-  a.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
-  setTimeout(()=>{a.remove();URL.revokeObjectURL(url)},5000);
-}
-
-async function saveBlobReliable(blob,name){
-  // Chrome/Edge desktop: apre direttamente "Salva con nome"
-  if('showSaveFilePicker' in window){
-    const ext=(name.split('.').pop()||'txt').toLowerCase();
-    const mimeMap={
-      pdf:'application/pdf',
-      csv:'text/csv',
-      json:'application/json',
-      html:'text/html',
-      md:'text/markdown',
-      txt:'text/plain'
-    };
-    const picker=await window.showSaveFilePicker({
-      suggestedName:name,
-      types:[{
-        description:'File '+ext.toUpperCase(),
-        accept:{[mimeMap[ext]||'application/octet-stream']:['.'+ext]}
-      }]
-    });
-    const writable=await picker.createWritable();
-    await writable.write(blob);
-    await writable.close();
-    alert('File salvato correttamente.');
-    return;
-  }
-
-  // Fallback per browser che non supportano showSaveFilePicker
-  fallbackDownload(blob,name);
-}
-
-async function downloadGenerated(file){
-  try{
-    const name=file.name||'file.txt';
-    const ext=(name.split('.').pop()||'txt').toLowerCase();
-    const content=file.content||'';
-
-    let blob;
-    if(ext==='pdf'){
-      blob=buildSimplePdf(content);
-    }else{
-      const mimeMap={csv:'text/csv;charset=utf-8',json:'application/json;charset=utf-8',html:'text/html;charset=utf-8',md:'text/markdown;charset=utf-8',txt:'text/plain;charset=utf-8'};
-      blob=new Blob([content],{type:mimeMap[ext]||'text/plain;charset=utf-8'});
-    }
-
-    await saveBlobReliable(blob,name);
-  }catch(e){
-    if(e && e.name==='AbortError') return;
-    alert('Errore durante il salvataggio: '+(e?.message||e));
-  }
-}
-
-async function showMemories(){
-  try{const j=await api('memories');alert(j.memories.length?j.memories.map((x,i)=>(i+1)+'. '+x.content).join('\n\n'):'Nessuna memoria salvata.')}catch(e){alert(e.message)}
-}
-async function clearChat(){if(!confirm('Cancellare la cronologia? Le memorie resteranno.'))return;await api('clear');await load()}
+async function clearChat(){if(confirm('Cancellare la conversazione?')){await api('clear');await load()}}
 function logout(){localStorage.removeItem('assistente_pw');location.reload()}
-input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg()}});
-if(pw){document.getElementById('password').value=pw;login()}
+$('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg()}});
+if(password){$('pw').value=password;login()}
 </script>
 </body></html>
