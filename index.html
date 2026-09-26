@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Assistente Stefano FULL 2.0.1</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
+<style>
+:root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,system-ui;background:var(--bg);color:var(--t)}
+.app{max-width:1180px;margin:auto;padding:12px}.top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}
+h1{font-size:22px;margin:0}.badge{font-size:12px;background:#1b2748;padding:7px 10px;border-radius:999px}
+.grid{display:grid;grid-template-columns:285px minmax(0,1fr);gap:12px}.side,.card{background:var(--p);border:1px solid #233052;border-radius:16px;min-width:0}
+.side{padding:12px;height:calc(100vh - 75px);overflow-y:auto;overflow-x:hidden}.side button,.side select{width:100%;margin:5px 0}.side .panel{display:flex;align-items:flex-start;gap:9px;line-height:1.35;white-space:normal}.side .panel input[type=checkbox]{width:auto;min-width:16px;height:16px;margin:2px 0 0 0;padding:0;flex:0 0 auto}.side .small{line-height:1.35;overflow-wrap:anywhere}
+.card{overflow:hidden}.chat{height:58vh;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;padding:11px 13px;border-radius:15px;white-space:pre-wrap;line-height:1.45}.user{align-self:flex-end;background:#2b4eb8}.assistant{align-self:flex-start;background:var(--p2)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.bar{padding:10px 12px;border-top:1px solid #233052;background:#0f1830}
+textarea{width:100%;min-height:68px;max-height:180px;resize:none;background:#111a31;color:white;border:1px solid #2b3a62;border-radius:13px;padding:12px;font:inherit}
+button,select,input{border:0;border-radius:10px;padding:9px 11px;font:inherit}button{font-weight:700;cursor:pointer;position:relative;z-index:1;touch-action:manipulation}button:active{transform:translateY(1px)}.primary{background:var(--a);color:#07112e}.secondary{background:#202c4a;color:white}.good{background:var(--g);color:#d8ffe9}.danger{background:#472232;color:#ffdbe3}
+.small{font-size:12px;color:var(--m)}.hidden{display:none}.download{align-self:flex-start;background:#102c22;border:1px solid #235c46;padding:10px;border-radius:12px}
+a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-decoration:none;padding:8px 11px;border-radius:9px;font-weight:700}
+.panel{margin:8px 0;padding:10px;background:#0f1830;border-radius:10px;display:flex;align-items:flex-start;gap:8px;line-height:1.3}.panel input{margin-top:2px;flex:0 0 auto}.login{max-width:420px;margin:12vh auto;background:var(--p);padding:22px;border-radius:18px}
+@media(max-width:900px){.grid{grid-template-columns:250px minmax(0,1fr)}}@media(max-width:780px){.grid{grid-template-columns:1fr}.side{height:auto;max-height:none}.chat{height:54vh}}
+</style>
+</head>
+<body>
+<div id="login" class="login">
+<h2>🤖 Assistente Stefano FULL</h2><input id="pw" type="password" placeholder="Password">
+<button id="btnLogin" class="primary" type="button">Entra</button><div id="loginErr" class="small"></div>
+</div>
+
+<div id="app" class="app hidden">
+<div class="top"><h1>🤖 Assistente Stefano FULL 2.0.1</h1><div class="badge">Autonomous • multi-agent • sandbox • memoria • web • coding</div></div>
+<div id="uiStatus" class="small" style="margin:0 0 8px 4px">Interfaccia pronta.</div>
+<div class="grid">
+<aside class="side">
+  <div class="small">Modalità</div>
+  <select id="mode">
+    <option value="auto">Auto</option><option value="general">Generale</option>
+    <option value="developer">Developer</option><option value="graphics">Grafica/Volantini</option>
+    <option value="admin">Amministrazione</option><option value="commercial">Commerciale</option>
+    <option value="research">Ricerca</option>
+  </select>
+  <label class="panel"><input id="deep" type="checkbox"><span><b>Deep mode</b><br><span class="small">Planner + reviewer</span></span></label>
+  <label class="panel"><input id="autonomous" type="checkbox"><span><b>Autonomous mode</b><br><span class="small">Planner + 3 agenti + quality reviewer</span></span></label>
+  <div class="small">Team autonomo</div>
+  <select id="team">
+    <option value="balanced">Balanced</option>
+    <option value="developer">Developer</option>
+    <option value="research">Research</option>
+    <option value="business">Business</option>
+    <option value="graphics">Graphics</option>
+  </select>
+  <label class="panel"><input id="saveLib" type="checkbox"><span><b>Salva allegati</b><br><span class="small">Aggiungili alla libreria del progetto</span></span></label>
+
+  <div class="small">Progetto attivo</div>
+  <select id="project"><option value="">Nessun progetto</option></select>
+  <div id="activeProjectLabel" class="small" style="margin:2px 4px 8px">Nessun progetto selezionato</div>
+  <button id="btnNewProject" class="secondary" type="button">+ Nuovo progetto</button>
+  <button id="btnTasks" class="secondary" type="button">☑ Attività</button>
+  <button id="btnNewTask" class="secondary" type="button">+ Nuova attività</button>
+  <button id="btnLibrary" class="secondary" type="button">📚 Libreria</button>
+  <button id="btnMemories" class="secondary" type="button">🧠 Memorie</button>
+  <button id="btnStrategies" class="secondary" type="button">📈 Strategie apprese</button>
+  <button id="btnAutoRuns" class="secondary" type="button">🤖 Esecuzioni autonome</button>
+  <button id="btnSelfAudit" class="secondary" type="button">🧪 Auto-audit</button>
+  <button id="btnImprovements" class="secondary" type="button">🛠 Proposte miglioramento</button>
+  <button id="btnNewChat" class="danger" type="button">Nuova conversazione</button>
+  <button id="btnLogout" class="danger" type="button">Esci</button>
+  <div class="panel small">FULL 2.0.1: multi-agent controllato. Sul piano gratuito ogni richiesta autonoma usa più chiamate e può incontrare rate-limit.</div>
+  <div class="panel small">Sandbox locale: Python/JavaScript/HTML. Email, calendario e trading richiedono connettori separati.</div>
+</aside>
+
+<main class="card">
+<div id="chat" class="chat"></div>
+<div class="bar row">
+<input id="file" type="file" multiple class="hidden" accept=".txt,.csv,.json,.md,.html,.htm,.xml,.log,.pdf,.py,.js,.ts,.tsx,.jsx,.css,.sql,.ps1,.sh,.bat,.cmd,.yaml,.yml,.toml,.ini,.java,.c,.cpp,.cs,.go,.rs,.php,.rb,image/*">
+<button id="btnAttach" class="secondary" type="button">📎 Allega</button>
+<span id="fileStatus" class="small">Nessun allegato</span>
+<button id="clearFiles" class="secondary hidden" type="button">Rimuovi</button>
+</div>
+<div id="sandboxPanel" class="bar hidden"><b>🧪 Sandbox</b><pre id="sandboxOutput" style="white-space:pre-wrap;background:#090f1f;padding:10px;border-radius:8px;max-height:220px;overflow:auto"></pre><button id="btnCloseSandbox" class="secondary" type="button">Chiudi</button></div>
+<div class="bar">
+<textarea id="input" placeholder="Chiedimi qualsiasi cosa: ricerca, codice, PDF, volantino, progetto, analisi..."></textarea>
+<div class="row" style="margin-top:8px">
+<button id="btnSend" class="primary" type="button">Invia</button>
+<span class="small">Shift+Enter = nuova riga</span>
+</div>
+</div>
+</main>
+</div>
+</div>
+
+<script>
+const endpoint="https://tljicllyygtjhdrrcwcl.supabase.co/functions/v1/assistente-stefano";
+let password=localStorage.getItem('assistente_pw')||'',attached=[],lastAssistantId=null,activeProjectId=localStorage.getItem('assistente_project')||'';
+const $=id=>document.getElementById(id), chat=$('chat');
+
+async function api(action,data={}){
+ const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,password,...data})});
+ const j=await r.json().catch(()=>({error:'Risposta non valida'})); if(!r.ok)throw new Error(j.error||'Errore'); return j;
+}
+function add(role,text,id=null){
+ const d=document.createElement('div');d.className='msg '+role;d.textContent=text;chat.appendChild(d);
+ if(role==='assistant'&&id){
+   const row=document.createElement('div');row.className='row';
+   const up=document.createElement('button');up.className='secondary';up.textContent='👍';
+   const dn=document.createElement('button');dn.className='secondary';dn.textContent='👎';
+   up.onclick=()=>feedback(id,1);dn.onclick=()=>feedback(id,-1);
+   row.append(up,dn);d.appendChild(document.createElement('br'));d.appendChild(row);
+ }
+ chat.scrollTop=chat.scrollHeight;
+}
+function pdfEscape(s){return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\x20-\x7E\n\r\t]/g,'?').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)')}
+function wrapPdf(text,max=88){const o=[];for(const raw of String(text).replace(/\r/g,'').split('\n')){if(!raw){o.push('');continue}let l='';for(const w of raw.split(/\s+/)){if(!l)l=w;else if((l+' '+w).length<=max)l+=' '+w;else{o.push(l);l=w}}if(l)o.push(l)}return o}
+function simplePdf(text){
+ const lines=wrapPdf(text),lpp=52,pages=[];for(let i=0;i<lines.length;i+=lpp)pages.push(lines.slice(i,i+lpp));if(!pages.length)pages.push(['']);
+ const objs=[];const add=x=>(objs.push(x),objs.length);const font=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'),contents=[],pageNums=[];
+ for(let i=0;i<pages.length;i++){contents.push(add(''));pageNums.push(add(''))}
+ const pagesObj=add(''),catalog=add(`<< /Type /Catalog /Pages ${pagesObj} 0 R >>`);
+ pages.forEach((pg,i)=>{let s='BT\n/F1 11 Tf\n50 800 Td\n';pg.forEach((ln,j)=>{s+=(j?'0 -14 Td\n':'')+`(${pdfEscape(ln)}) Tj\n`});s+='ET';objs[contents[i]-1]=`<< /Length ${s.length} >>\nstream\n${s}\nendstream`;objs[pageNums[i]-1]=`<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${font} 0 R >> >> /Contents ${contents[i]} 0 R >>`});
+ objs[pagesObj-1]=`<< /Type /Pages /Kids [${pageNums.map(n=>`${n} 0 R`).join(' ')}] /Count ${pageNums.length} >>`;
+ let pdf='%PDF-1.4\n',offs=[0];for(let i=0;i<objs.length;i++){offs.push(pdf.length);pdf+=`${i+1} 0 obj\n${objs[i]}\nendobj\n`}const x=pdf.length;pdf+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;for(let i=1;i<offs.length;i++)pdf+=String(offs[i]).padStart(10,'0')+' 00000 n \n';pdf+=`trailer\n<< /Size ${objs.length+1} /Root ${catalog} 0 R >>\nstartxref\n${x}\n%%EOF`;return new Blob([pdf],{type:'application/pdf'})
+}
+let generatedCache=[];
+function addDownload(f){
+ generatedCache.push(f);
+ const d=document.createElement('div');d.className='download';
+ const title=document.createElement('b');title.textContent='📄 '+f.name;d.appendChild(title);
+ const row=document.createElement('div');row.className='row';row.style.marginTop='7px';
+
+ const a=document.createElement('a');a.className='dl';a.textContent='Scarica';
+ const ext=(f.name.split('.').pop()||'txt').toLowerCase();
+ const mime={csv:'text/csv',json:'application/json',html:'text/html',css:'text/css',js:'text/javascript',ts:'text/plain',py:'text/x-python',sql:'text/plain',md:'text/markdown',txt:'text/plain'};
+ const blob=ext==='pdf'?simplePdf(f.content||''):new Blob([f.content||''],{type:(mime[ext]||'text/plain')+';charset=utf-8'});
+ a.href=URL.createObjectURL(blob);a.download=f.name;row.appendChild(a);
+
+ if(['py','js','html'].includes(ext)){
+   const run=document.createElement('button');run.className='secondary';run.type='button';run.textContent=ext==='html'?'Anteprima':'Esegui';
+   run.addEventListener('click',()=>runGeneratedFile(f));
+   row.appendChild(run);
+ }
+ d.appendChild(row);chat.appendChild(d);
+}
+
+function showSandbox(text){
+ $('sandboxPanel').classList.remove('hidden');
+ $('sandboxOutput').textContent=String(text);
+ $('sandboxPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function runGeneratedFile(f){
+ const ext=(f.name.split('.').pop()||'').toLowerCase();
+ if(ext==='html'){
+   const blob=new Blob([f.content||''],{type:'text/html'});
+   window.open(URL.createObjectURL(blob),'_blank','noopener');
+   return;
+ }
+ if(ext==='js'){
+   const code=String(f.content||'');
+   const src=`<script>
+   const logs=[];
+   const old={log:console.log,error:console.error,warn:console.warn};
+   ['log','error','warn'].forEach(k=>console[k]=(...a)=>{logs.push(a.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' '));old[k](...a)});
+   window.onerror=(m,s,l,c,e)=>parent.postMessage({kind:'sandbox',text:'ERRORE: '+m},'*');
+   try{${code}\n;parent.postMessage({kind:'sandbox',text:logs.join('\\n')||'Esecuzione completata senza output console.'},'*')}
+   catch(e){parent.postMessage({kind:'sandbox',text:'ERRORE: '+e.message},'*')}
+   <\/script>`;
+   const iframe=document.createElement('iframe');
+   iframe.sandbox='allow-scripts';iframe.style.display='none';iframe.srcdoc=src;document.body.appendChild(iframe);
+   setTimeout(()=>iframe.remove(),5000);return;
+ }
+ if(ext==='py'){
+   showSandbox('Caricamento sandbox Python...');
+   try{
+     if(!window.loadPyodide){
+       const s=document.createElement('script');
+       s.src='https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js';
+       document.head.appendChild(s);
+       await new Promise((res,rej)=>{s.onload=res;s.onerror=()=>rej(new Error('Impossibile caricare Pyodide'))});
+     }
+     if(!window._pyodide)window._pyodide=await window.loadPyodide();
+
+     // FULL 2.0.1: copia nella sandbox anche gli altri file generati
+     // (CSV, JSON, TXT, ecc.) così gli script Python possono aprirli per nome.
+     for(const gf of generatedCache){
+       if(!gf || !gf.name || gf===f) continue;
+       try{
+         const data=new TextEncoder().encode(String(gf.content||''));
+         try{ window._pyodide.FS.unlink('/home/pyodide/'+gf.name); }catch{}
+         window._pyodide.FS.writeFile('/home/pyodide/'+gf.name,data);
+       }catch(err){
+         console.warn('Impossibile caricare in sandbox:',gf.name,err);
+       }
+     }
+
+     await window._pyodide.runPythonAsync(`import os, sys, io\nos.chdir('/home/pyodide')\n_buf=io.StringIO()\n_old=sys.stdout\n_old_err=sys.stderr\nsys.stdout=_buf\nsys.stderr=_buf`);
+     try{await window._pyodide.runPythonAsync(String(f.content||''));}
+     catch(e){
+       try{window._pyodide.runPython(`sys.stdout=_old\nsys.stderr=_old_err`)}catch{}
+       showSandbox('ERRORE PYTHON:\\n'+e.message);return;
+     }
+     const output=window._pyodide.runPython(`sys.stdout=_old\nsys.stderr=_old_err\n_buf.getvalue()`);
+     showSandbox(output||'Esecuzione Python completata senza output.');
+   }catch(e){showSandbox('ERRORE SANDBOX: '+e.message)}
+ }
+}
+window.addEventListener('message',e=>{if(e.data?.kind==='sandbox')showSandbox(e.data.text)});
+async function login(){
+ password=$('pw').value;
+ try{await api('history');localStorage.setItem('assistente_pw',password);$('login').classList.add('hidden');$('app').classList.remove('hidden');await Promise.all([load(),loadProjects()])}
+ catch(e){$('loginErr').textContent='Password errata o server non raggiungibile.'}
+}
+async function load(){
+ const j=await api('history');chat.innerHTML='';j.messages.forEach(x=>add(x.role,x.content,x.role==='assistant'?x.id:null));
+ if(!j.messages.length)add('assistant','Ciao Stefano. FULL 2.0 Autonomous pronta: progetto, libreria e chat ora restano sincronizzati.');
+}
+async function loadProjects(preferredId=null){
+ const j=await api('projects'),s=$('project');
+ const wanted=String(preferredId??activeProjectId??s.value??'');
+ s.innerHTML='<option value="">Nessun progetto</option>';
+ j.projects.forEach(p=>{const o=document.createElement('option');o.value=String(p.id);o.textContent=p.name;s.appendChild(o)});
+ if(wanted&&[...s.options].some(o=>o.value===wanted)){s.value=wanted;activeProjectId=wanted;localStorage.setItem('assistente_project',wanted)}
+ else if(!wanted){s.value=''}
+ updateActiveProjectLabel();
+}
+function updateActiveProjectLabel(){
+ const s=$('project'),label=$('activeProjectLabel');if(!label)return;label.textContent=s.value?`Attivo: ${s.options[s.selectedIndex]?.text||''}`:'Nessun progetto selezionato';
+}
+$('project').addEventListener('change',()=>{activeProjectId=$('project').value||'';if(activeProjectId)localStorage.setItem('assistente_project',activeProjectId);else localStorage.removeItem('assistente_project');updateActiveProjectLabel()});
+async function newProject(){
+ const name=prompt('Nome progetto:');if(!name)return;const desc=prompt('Descrizione (opzionale):')||'';
+ const j=await api('project_create',{name,description:desc});activeProjectId=String(j.project.id);localStorage.setItem('assistente_project',activeProjectId);await loadProjects(activeProjectId)
+}
+async function newTask(){
+ const title=prompt('Attività:');if(!title)return;
+ await api('task_create',{title,project_id:activeProjectId||$('project').value||null});alert('Attività creata.')
+}
+async function showTasks(){
+ const j=await api('tasks',{project_id:activeProjectId||$('project').value||null});
+ alert(j.tasks.length?j.tasks.map(t=>`${t.status==='done'?'✓':'○'} ${t.title}`).join('\n'):'Nessuna attività.')
+}
+async function showLibrary(){
+ const j=await api('library_list',{project_id:activeProjectId||$('project').value||null});
+ alert(j.documents.length?j.documents.map(d=>'• '+d.name).join('\n'):'Libreria vuota.')
+}
+async function showMemories(){const j=await api('memories');alert(j.memories.length?j.memories.map(m=>'• '+m.content).join('\n\n'):'Nessuna memoria.')}
+async function showStrategies(){const j=await api('strategies');alert(j.strategies.length?j.strategies.map(s=>`• [${s.category}] ${s.content}`).join('\n\n'):'Nessuna strategia appresa.')}
+async function feedback(id,rating){const note=prompt(rating>0?'Cosa ti è piaciuto? (opzionale)':'Cosa deve migliorare?')||'';await api('feedback',{message_id:id,rating,note});alert('Feedback salvato.')}
+async function extractPdf(file){
+ const pdfjs=await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs");
+ pdfjs.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs";
+ const pdf=await pdfjs.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;let out='';
+ for(let p=1;p<=Math.min(pdf.numPages,80);p++){const pg=await pdf.getPage(p),c=await pg.getTextContent();out+=`\n--- PAGINA ${p} ---\n`+c.items.map(i=>i.str).join(' ');if(out.length>900000)break}
+ return out;
+}
+function dataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+$('file').addEventListener('change',async()=>{
+ attached=[];for(const f of [...$('file').files]){
+   try{
+    if(f.type.startsWith('image/'))attached.push({name:f.name,kind:'image',mime:f.type,dataUrl:await dataURL(f)});
+    else if(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'))attached.push({name:f.name,kind:'text',mime:'application/pdf',content:await extractPdf(f)});
+    else attached.push({name:f.name,kind:'text',mime:f.type||'text/plain',content:(await f.text()).slice(0,900000)});
+   }catch(e){alert('Errore leggendo '+f.name)}
+ }
+ $('fileStatus').textContent=attached.length?attached.map(x=>x.name).join(', '):'Nessun allegato';$('clearFiles').classList.toggle('hidden',!attached.length)
+});
+function clearAttached(){attached=[];$('file').value='';$('fileStatus').textContent='Nessun allegato';$('clearFiles').classList.add('hidden')}
+async function sendMsg(){
+ const text=$('input').value.trim();if(!text&&!attached.length)return;$('input').value='';add('user',text||'[Analizza allegati]');add('assistant','Sto elaborando…');const wait=chat.lastChild;
+ try{
+  const j=await api('chat',{message:text,files:attached,mode:$('mode').value,deep:$('deep').checked,project_id:activeProjectId||$('project').value||null,save_to_library:$('saveLib').checked,autonomous:$('autonomous').checked,team:$('team').value});
+  wait.remove();add('assistant',j.answer,j.message_id);if(j.autonomous_run_id)setStatus('Esecuzione autonoma #'+j.autonomous_run_id+' completata.');(j.generated_files||[]).forEach(addDownload);if(j.active_project_id){activeProjectId=String(j.active_project_id);localStorage.setItem('assistente_project',activeProjectId);await loadProjects(activeProjectId)}else if(j.refresh_projects)await loadProjects();clearAttached()
+ }catch(e){wait.remove();add('assistant','Errore: '+e.message)}
+}
+
+async function showAutoRuns(){
+ const j=await api('autonomous_runs');
+ alert(j.runs.length?j.runs.map(r=>`#${r.id} [${r.status}] ${r.team} — ${r.objective}`).join('\n\n'):'Nessuna esecuzione autonoma.')
+}
+async function runSelfAudit(){
+ setStatus('Auto-audit in corso...');
+ const j=await api('self_audit');
+ setStatus('Auto-audit completato.');
+ alert(j.proposal||'Nessuna proposta.');
+}
+async function showImprovements(){
+ const j=await api('improvements');
+ alert(j.proposals.length?j.proposals.map(p=>`• ${p.title}\n${p.description}`).join('\n\n---\n\n'):'Nessuna proposta di miglioramento.')
+}
+async function clearChat(){if(confirm('Cancellare la conversazione?')){await api('clear');await load()}}
+function logout(){localStorage.removeItem('assistente_pw');location.reload()}
+
+function setStatus(msg, isError=false){
+  const el=$('uiStatus');
+  if(!el) return;
+  el.textContent=msg;
+  el.style.color=isError?'#ff9aa9':'#9eabc9';
+}
+
+function safeBind(id,event,handler){
+  const el=$(id);
+  if(!el){
+    console.error('Elemento mancante:',id);
+    setStatus('Errore interfaccia: elemento mancante '+id,true);
+    return;
+  }
+  el.addEventListener(event, async (ev)=>{
+    try{
+      if(event==='click') ev.preventDefault();
+      await handler(ev);
+    }catch(err){
+      console.error(err);
+      setStatus('Errore: '+(err?.message||err),true);
+      alert('Errore: '+(err?.message||err));
+    }
+  });
+}
+
+function bindUI(){
+  safeBind('btnLogin','click',login);
+  safeBind('btnNewProject','click',newProject);
+  safeBind('btnTasks','click',showTasks);
+  safeBind('btnNewTask','click',newTask);
+  safeBind('btnLibrary','click',showLibrary);
+  safeBind('btnMemories','click',showMemories);
+  safeBind('btnStrategies','click',showStrategies);
+  safeBind('btnAutoRuns','click',showAutoRuns);
+  safeBind('btnSelfAudit','click',runSelfAudit);
+  safeBind('btnImprovements','click',showImprovements);
+  safeBind('btnCloseSandbox','click',()=>{$('sandboxPanel').classList.add('hidden')});
+  safeBind('btnNewChat','click',clearChat);
+  safeBind('btnLogout','click',logout);
+  safeBind('btnAttach','click',()=>{$('file').click()});
+  safeBind('clearFiles','click',clearAttached);
+  safeBind('btnSend','click',sendMsg);
+
+  safeBind('project','change',async ()=>{
+    activeProjectId=$('project').value||'';
+    localStorage.setItem('assistente_project',activeProjectId);
+    setStatus(activeProjectId?'Progetto attivo aggiornato.':'Nessun progetto attivo.');
+  });
+
+  safeBind('input','keydown',async e=>{
+    if(e.key==='Enter'&&!e.shiftKey){
+      e.preventDefault();
+      await sendMsg();
+    }
+  });
+
+  setStatus('Interfaccia FULL 2.0 Autonomous pronta.');
+}
+
+document.addEventListener('DOMContentLoaded', async ()=>{
+  bindUI();
+  if(password){
+    $('pw').value=password;
+    try{ await login(); }
+    catch(err){ console.error(err); setStatus('Accesso automatico non riuscito.',true); }
+  }
+});
+</script>
+</body></html>
