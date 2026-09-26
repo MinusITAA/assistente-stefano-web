@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Assistente Stefano FULL 1.0</title>
+<title>Assistente Stefano FULL 1.1</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
 <style>
 :root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
@@ -29,7 +29,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 
 <div id="app" class="app hidden">
-<div class="top"><h1>🤖 Assistente Stefano FULL 1.0</h1><div class="badge">modulare • memoria • web • coding • grafica</div></div>
+<div class="top"><h1>🤖 Assistente Stefano FULL 1.1</h1><div class="badge">modulare • memoria • web • coding • grafica</div></div>
 <div class="grid">
 <aside class="side">
   <div class="small">Modalità</div>
@@ -52,7 +52,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <button class="secondary" onclick="showStrategies()">📈 Strategie apprese</button>
   <button class="danger" onclick="clearChat()">Nuova conversazione</button>
   <button class="danger" onclick="logout()">Esci</button>
-  <div class="panel small">FULL 1.0 non esegue ancora codice in sandbox e non invia email/calendario autonomamente.</div>
+  <div class="panel small">FULL 1.1 non esegue ancora codice in sandbox e non invia email/calendario autonomamente.</div>
 </aside>
 
 <main class="card">
@@ -94,14 +94,25 @@ function add(role,text,id=null){
  }
  chat.scrollTop=chat.scrollHeight;
 }
+function pdfEscape(s){return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\x20-\x7E\n\r\t]/g,'?').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)')}
+function wrapPdf(text,max=88){const o=[];for(const raw of String(text).replace(/\r/g,'').split('\n')){if(!raw){o.push('');continue}let l='';for(const w of raw.split(/\s+/)){if(!l)l=w;else if((l+' '+w).length<=max)l+=' '+w;else{o.push(l);l=w}}if(l)o.push(l)}return o}
+function simplePdf(text){
+ const lines=wrapPdf(text),lpp=52,pages=[];for(let i=0;i<lines.length;i+=lpp)pages.push(lines.slice(i,i+lpp));if(!pages.length)pages.push(['']);
+ const objs=[];const add=x=>(objs.push(x),objs.length);const font=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'),contents=[],pageNums=[];
+ for(let i=0;i<pages.length;i++){contents.push(add(''));pageNums.push(add(''))}
+ const pagesObj=add(''),catalog=add(`<< /Type /Catalog /Pages ${pagesObj} 0 R >>`);
+ pages.forEach((pg,i)=>{let s='BT\n/F1 11 Tf\n50 800 Td\n';pg.forEach((ln,j)=>{s+=(j?'0 -14 Td\n':'')+`(${pdfEscape(ln)}) Tj\n`});s+='ET';objs[contents[i]-1]=`<< /Length ${s.length} >>\nstream\n${s}\nendstream`;objs[pageNums[i]-1]=`<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${font} 0 R >> >> /Contents ${contents[i]} 0 R >>`});
+ objs[pagesObj-1]=`<< /Type /Pages /Kids [${pageNums.map(n=>`${n} 0 R`).join(' ')}] /Count ${pageNums.length} >>`;
+ let pdf='%PDF-1.4\n',offs=[0];for(let i=0;i<objs.length;i++){offs.push(pdf.length);pdf+=`${i+1} 0 obj\n${objs[i]}\nendobj\n`}const x=pdf.length;pdf+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;for(let i=1;i<offs.length;i++)pdf+=String(offs[i]).padStart(10,'0')+' 00000 n \n';pdf+=`trailer\n<< /Size ${objs.length+1} /Root ${catalog} 0 R >>\nstartxref\n${x}\n%%EOF`;return new Blob([pdf],{type:'application/pdf'})
+}
 function addDownload(f){
  const d=document.createElement('div');d.className='download';
  const title=document.createElement('b');title.textContent='📄 '+f.name;d.appendChild(title);
  const a=document.createElement('a');a.className='dl';a.textContent='Scarica';
  const ext=(f.name.split('.').pop()||'txt').toLowerCase();
- const mime={csv:'text/csv',json:'application/json',html:'text/html',css:'text/css',js:'text/javascript',ts:'text/plain',py:'text/x-python',sql:'text/plain',md:'text/markdown',txt:'text/plain',pdf:'text/plain'};
- const blob=new Blob([f.content||''],{type:(mime[ext]||'text/plain')+';charset=utf-8'});
- a.href=URL.createObjectURL(blob);a.download=f.name;a.target='_blank';d.appendChild(document.createElement('br'));d.appendChild(a);chat.appendChild(d);
+ const mime={csv:'text/csv',json:'application/json',html:'text/html',css:'text/css',js:'text/javascript',ts:'text/plain',py:'text/x-python',sql:'text/plain',md:'text/markdown',txt:'text/plain'};
+ const blob=ext==='pdf'?simplePdf(f.content||''):new Blob([f.content||''],{type:(mime[ext]||'text/plain')+';charset=utf-8'});
+ a.href=URL.createObjectURL(blob);a.download=f.name;d.appendChild(document.createElement('br'));d.appendChild(a);chat.appendChild(d);
 }
 async function login(){
  password=$('pw').value;
@@ -110,7 +121,7 @@ async function login(){
 }
 async function load(){
  const j=await api('history');chat.innerHTML='';j.messages.forEach(x=>add(x.role,x.content,x.role==='assistant'?x.id:null));
- if(!j.messages.length)add('assistant','Ciao Stefano. FULL 1.0 pronta.');
+ if(!j.messages.length)add('assistant','Ciao Stefano. FULL 1.1 pronta.');
 }
 async function loadProjects(){
  const j=await api('projects'),s=$('project');s.innerHTML='<option value="">Nessun progetto</option>';
@@ -158,7 +169,7 @@ async function sendMsg(){
  const text=$('input').value.trim();if(!text&&!attached.length)return;$('input').value='';add('user',text||'[Analizza allegati]');add('assistant','Sto elaborando…');const wait=chat.lastChild;
  try{
   const j=await api('chat',{message:text,files:attached,mode:$('mode').value,deep:$('deep').checked,project_id:$('project').value||null,save_to_library:$('saveLib').checked});
-  wait.remove();add('assistant',j.answer,j.message_id);(j.generated_files||[]).forEach(addDownload);clearAttached()
+  wait.remove();add('assistant',j.answer,j.message_id);(j.generated_files||[]).forEach(addDownload);if(j.refresh_projects)await loadProjects();clearAttached()
  }catch(e){wait.remove();add('assistant','Errore: '+e.message)}
 }
 async function clearChat(){if(confirm('Cancellare la conversazione?')){await api('clear');await load()}}
