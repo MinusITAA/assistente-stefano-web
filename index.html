@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Assistente Stefano FULL 1.1</title>
+<title>Assistente Stefano FULL 1.2</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
 <style>
 :root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
@@ -29,7 +29,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 
 <div id="app" class="app hidden">
-<div class="top"><h1>🤖 Assistente Stefano FULL 1.1</h1><div class="badge">modulare • memoria • web • coding • grafica</div></div>
+<div class="top"><h1>🤖 Assistente Stefano FULL 1.2</h1><div class="badge">progetti sincronizzati • memoria • web • coding • grafica</div></div>
 <div class="grid">
 <aside class="side">
   <div class="small">Modalità</div>
@@ -44,6 +44,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 
   <div class="small">Progetto attivo</div>
   <select id="project"><option value="">Nessun progetto</option></select>
+  <div id="activeProjectLabel" class="small" style="margin:2px 4px 8px">Nessun progetto selezionato</div>
   <button class="secondary" onclick="newProject()">+ Nuovo progetto</button>
   <button class="secondary" onclick="showTasks()">☑ Attività</button>
   <button class="secondary" onclick="newTask()">+ Nuova attività</button>
@@ -52,7 +53,8 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <button class="secondary" onclick="showStrategies()">📈 Strategie apprese</button>
   <button class="danger" onclick="clearChat()">Nuova conversazione</button>
   <button class="danger" onclick="logout()">Esci</button>
-  <div class="panel small">FULL 1.1 non esegue ancora codice in sandbox e non invia email/calendario autonomamente.</div>
+  <div class="panel small">FULL 1.2 sincronizza automaticamente i progetti citati in chat con il menu.</div>
+  <div class="panel small">Non esegue ancora codice in sandbox e non invia email/calendario autonomamente.</div>
 </aside>
 
 <main class="card">
@@ -76,7 +78,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 
 <script type="module">
 const endpoint="https://tljicllyygtjhdrrcwcl.supabase.co/functions/v1/assistente-stefano";
-let password=localStorage.getItem('assistente_pw')||'',attached=[],lastAssistantId=null;
+let password=localStorage.getItem('assistente_pw')||'',attached=[],lastAssistantId=null,activeProjectId=localStorage.getItem('assistente_project')||'';
 const $=id=>document.getElementById(id), chat=$('chat');
 
 async function api(action,data={}){
@@ -121,26 +123,35 @@ async function login(){
 }
 async function load(){
  const j=await api('history');chat.innerHTML='';j.messages.forEach(x=>add(x.role,x.content,x.role==='assistant'?x.id:null));
- if(!j.messages.length)add('assistant','Ciao Stefano. FULL 1.1 pronta.');
+ if(!j.messages.length)add('assistant','Ciao Stefano. FULL 1.2 pronta: progetto, libreria e chat ora restano sincronizzati.');
 }
-async function loadProjects(){
- const j=await api('projects'),s=$('project');s.innerHTML='<option value="">Nessun progetto</option>';
- j.projects.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;s.appendChild(o)})
+async function loadProjects(preferredId=null){
+ const j=await api('projects'),s=$('project');
+ const wanted=String(preferredId??activeProjectId??s.value??'');
+ s.innerHTML='<option value="">Nessun progetto</option>';
+ j.projects.forEach(p=>{const o=document.createElement('option');o.value=String(p.id);o.textContent=p.name;s.appendChild(o)});
+ if(wanted&&[...s.options].some(o=>o.value===wanted)){s.value=wanted;activeProjectId=wanted;localStorage.setItem('assistente_project',wanted)}
+ else if(!wanted){s.value=''}
+ updateActiveProjectLabel();
 }
+function updateActiveProjectLabel(){
+ const s=$('project'),label=$('activeProjectLabel');if(!label)return;label.textContent=s.value?`Attivo: ${s.options[s.selectedIndex]?.text||''}`:'Nessun progetto selezionato';
+}
+$('project').addEventListener('change',()=>{activeProjectId=$('project').value||'';if(activeProjectId)localStorage.setItem('assistente_project',activeProjectId);else localStorage.removeItem('assistente_project');updateActiveProjectLabel()});
 async function newProject(){
  const name=prompt('Nome progetto:');if(!name)return;const desc=prompt('Descrizione (opzionale):')||'';
- await api('project_create',{name,description:desc});await loadProjects()
+ const j=await api('project_create',{name,description:desc});activeProjectId=String(j.project.id);localStorage.setItem('assistente_project',activeProjectId);await loadProjects(activeProjectId)
 }
 async function newTask(){
  const title=prompt('Attività:');if(!title)return;
- await api('task_create',{title,project_id:$('project').value||null});alert('Attività creata.')
+ await api('task_create',{title,project_id:activeProjectId||$('project').value||null});alert('Attività creata.')
 }
 async function showTasks(){
- const j=await api('tasks',{project_id:$('project').value||null});
+ const j=await api('tasks',{project_id:activeProjectId||$('project').value||null});
  alert(j.tasks.length?j.tasks.map(t=>`${t.status==='done'?'✓':'○'} ${t.title}`).join('\n'):'Nessuna attività.')
 }
 async function showLibrary(){
- const j=await api('library_list',{project_id:$('project').value||null});
+ const j=await api('library_list',{project_id:activeProjectId||$('project').value||null});
  alert(j.documents.length?j.documents.map(d=>'• '+d.name).join('\n'):'Libreria vuota.')
 }
 async function showMemories(){const j=await api('memories');alert(j.memories.length?j.memories.map(m=>'• '+m.content).join('\n\n'):'Nessuna memoria.')}
@@ -168,8 +179,8 @@ function clearAttached(){attached=[];$('file').value='';$('fileStatus').textCont
 async function sendMsg(){
  const text=$('input').value.trim();if(!text&&!attached.length)return;$('input').value='';add('user',text||'[Analizza allegati]');add('assistant','Sto elaborando…');const wait=chat.lastChild;
  try{
-  const j=await api('chat',{message:text,files:attached,mode:$('mode').value,deep:$('deep').checked,project_id:$('project').value||null,save_to_library:$('saveLib').checked});
-  wait.remove();add('assistant',j.answer,j.message_id);(j.generated_files||[]).forEach(addDownload);if(j.refresh_projects)await loadProjects();clearAttached()
+  const j=await api('chat',{message:text,files:attached,mode:$('mode').value,deep:$('deep').checked,project_id:activeProjectId||$('project').value||null,save_to_library:$('saveLib').checked});
+  wait.remove();add('assistant',j.answer,j.message_id);(j.generated_files||[]).forEach(addDownload);if(j.active_project_id){activeProjectId=String(j.active_project_id);localStorage.setItem('assistente_project',activeProjectId);await loadProjects(activeProjectId)}else if(j.refresh_projects)await loadProjects();clearAttached()
  }catch(e){wait.remove();add('assistant','Errore: '+e.message)}
 }
 async function clearChat(){if(confirm('Cancellare la conversazione?')){await api('clear');await load()}}
