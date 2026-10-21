@@ -286,6 +286,7 @@ function gsPhotoQuery(text){
 async function gsFindWebPhoto(query,automatic=false){
  setStatus('Cerco foto online: '+query+'…');
  const result=await api('graphics_image_search',{query});
+ if(result.diagnostics)console.info('Graphics photo search',result.diagnostics);
  const usable=[];
  for(const candidate of result.images||[]){
    if(!/^data:image\/(png|jpeg|webp);base64,/i.test(candidate.dataUrl||''))continue;
