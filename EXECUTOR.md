@@ -4,7 +4,7 @@ Stato: implementazione preparata, non attiva. L'attivazione amplia l'accesso del
 
 ## Perimetro preparato
 
-- Cartella: `C:/workspace/assistente-stefano-agent`. Lettura e scrittura soltanto qui; copie delle versioni sostituite in `.history`.
+- Cartella: `workspace`, creata accanto al programma. Lettura e scrittura soltanto qui; copie delle versioni sostituite in `.history`.
 - Controlli reali: parsing JSON e `node --check`, che controlla sintassi senza eseguire i file.
 - Browser opzionale: contesto separato senza sessioni personali, sola apertura/lettura/screenshot su `https://minusitaa.github.io`. Nessun click, compilazione di moduli o login.
 - Nessuna shell arbitraria, esecuzione Python, installazione automatica, push GitHub, deploy Supabase o trading.
