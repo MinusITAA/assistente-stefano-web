@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FULL 2.9.2 VISUAL FACTS LOCK.1 GRAPHICS LITE.1 FILE PARSER FIX</title>
+<title>FULL 2.10 GRAPHICS</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
 <style>
 :root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
@@ -29,7 +29,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 
 <div id="app" class="app hidden">
-<div class="top"><h1>🤖 Assistente Stefano FULL 2.9.2 VISUAL FACTS LOCK.1 GRAPHICS LITE.1 FILE PARSER FIX</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
+<div class="top"><h1>🤖 Assistente Stefano FULL 2.10 GRAPHICS</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
 <div id="uiStatus" class="small" style="margin:0 0 8px 4px">Interfaccia pronta.</div>
 <div id="autoJobStatus" class="small hidden" style="margin:0 0 8px 4px;padding:8px 10px;background:#111a31;border-radius:9px"></div>
 <div class="grid">
@@ -74,7 +74,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <button id="btnRouter" class="secondary" type="button">🌐 Stato AI Router</button>
   <button id="btnNewChat" class="danger" type="button">Nuova conversazione</button>
   <button id="btnLogout" class="danger" type="button">Esci</button>
-  <div class="panel small">FULL 2.9.2 VISUAL FACTS LOCK.1 GRAPHICS LITE.1 FILE PARSER FIX: FULL 2.9.2 VISUAL FACTS LOCK.1 GRAPHICS LITE.1 FILE PARSER FIX: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
+  <div class="panel small">FULL 2.10 GRAPHICS: FULL 2.10 GRAPHICS: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
   <div class="panel small">Sandbox locale: Python/JavaScript/HTML. Email, calendario e trading richiedono connettori separati.</div>
 </aside>
 
@@ -222,13 +222,13 @@ function graphicsStudioVisual(mode){
 function gsExtractPriceFromRequest(text){
  const s=String(text||"");
  const patterns=[
-   /(?:€\s*)?(\d{1,5}(?:[.,]\d{1,2})?)\s*€/i,
-   /€\s*(\d{1,5}(?:[.,]\d{1,2})?)/i,
-   /prezzo(?:\s+offerta|\s+promo)?\s*[:\-]?\s*€?\s*(\d{1,5}(?:[.,]\d{1,2})?)/i
+   /(?:€\s*)?((?:\d{1,3}(?:[. ]\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?))\s*€/i,
+   /€\s*((?:\d{1,3}(?:[. ]\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?))/i,
+   /prezzo(?:\s+offerta|\s+promo)?\s*[:\-]?\s*€?\s*((?:\d{1,3}(?:[. ]\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?))/i
  ];
  for(const p of patterns){
    const m=s.match(p);
-   if(m)return m[1].replace(".",",")+" €";
+   if(m)return m[1]+" €";
  }
  return "";
 }
@@ -253,98 +253,19 @@ function gsSafeFeatureText(feature, source){
 }
 
 function graphicsStudioRenderHTML(spec){
- const s={...(spec||{})};
- const source=String(s.source_request||"");
- if(!s.price)s.price=gsExtractPriceFromRequest(source);
- const ivaFallback=gsExtractIvaFromRequest(source);
- if(ivaFallback && !String(s.price_note||"").toLowerCase().includes("iva")){
-   s.price_note=[s.price_note,ivaFallback].filter(Boolean).join(" • ");
- }
- const features=Array.isArray(s.features)?s.features.map(f=>gsSafeFeatureText(f,source)).filter(Boolean).slice(0,4):[];
- const template=s.template||"hero_product";
- const featureHtml=features.map((f,i)=>`
-   <div class="gs-feature"><div class="gs-feature-num">${String(i+1).padStart(2,'0')}</div><div>${escHtml(f)}</div></div>`).join("");
- const priceBlock=s.price?`
-   <div class="gs-price-wrap">
-     <div class="gs-price-label">${escHtml(s.promo_badge||"PREZZO")}</div>
-     <div class="gs-price">${escHtml(s.price)}</div>
-     ${s.price_note?`<div class="gs-price-note">${escHtml(s.price_note)}</div>`:""}
-   </div>`:"";
- const title=escHtml(s.title||"OFFERTA MACRODENTAL");
- const subtitle=escHtml(s.subtitle||"");
- const product=escHtml(s.product_name||"");
- const eyebrow=escHtml(s.eyebrow||"");
- const cta=escHtml(s.cta||"Contatta il tuo referente Macrodental");
- const footer=escHtml(s.footer||"");
- const visual=graphicsStudioVisual(s.visual_mode||'abstract_dental');
-
- return `<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
-<style>
-@page{size:A4;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
-body{font-family:Inter,Arial,Helvetica,sans-serif;color:#18243A}
-.page{width:210mm;height:297mm;overflow:hidden;position:relative;background:radial-gradient(circle at 92% 10%,rgba(11,114,206,.11),transparent 30%),linear-gradient(180deg,#fff 0%,#fff 78%,#f7fbff 100%)}
-.page:before{content:"";position:absolute;left:0;top:0;width:100%;height:4mm;background:linear-gradient(90deg,#082B5C,#0B72CE)}
-.gs-shell{height:100%;padding:17mm 15mm 13mm;display:flex;flex-direction:column;position:relative;z-index:2}
-.gs-brand{display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:6mm;border-bottom:1px solid #dbe6f2}
-.gs-logo{font-weight:900;letter-spacing:-1px;font-size:28pt;color:#082B5C;line-height:.9}.gs-logo span{color:#0B72CE}
-.gs-brand-sub{font-size:8.5pt;letter-spacing:2px;color:#68758A;text-transform:uppercase}
-.gs-top{display:grid;grid-template-columns:1.08fr .92fr;gap:9mm;align-items:center;min-height:124mm;padding:9mm 0 6mm}
-.gs-eyebrow{font-size:9pt;text-transform:uppercase;letter-spacing:2.2px;font-weight:800;color:#0B72CE;margin-bottom:4mm}
-.gs-title{font-size:37pt;line-height:.97;letter-spacing:-1.2px;font-weight:900;color:#082B5C;margin:0 0 5mm}
-.gs-subtitle{font-size:13.5pt;line-height:1.38;color:#516079;max-width:105mm;margin-bottom:6mm}
-.gs-product{font-size:15pt;font-weight:800;color:#18243A;margin-bottom:5mm}
-.gs-price-wrap{display:inline-flex;flex-direction:column;align-items:flex-start;background:linear-gradient(135deg,#0B72CE,#0758A2);color:#fff;border-radius:6mm;padding:5.5mm 8mm 5mm;min-width:64mm;box-shadow:0 5mm 12mm rgba(11,114,206,.24)}
-.gs-price-label{font-size:7.5pt;font-weight:900;letter-spacing:1.6px;text-transform:uppercase;opacity:.88;margin-bottom:2mm}
-.gs-price{font-size:52pt;line-height:.86;font-weight:950;letter-spacing:-2px}.gs-price-note{font-size:9.5pt;margin-top:2.5mm;opacity:.96;font-weight:700}
-.gs-visual{height:105mm;border-radius:10mm;background:linear-gradient(145deg,#edf6ff,#dfefff);position:relative;overflow:hidden;box-shadow:inset 0 0 0 1px #d5e7f8}
-.gs-visual:after{content:"";position:absolute;width:65mm;height:65mm;border-radius:50%;background:rgba(255,255,255,.58);right:-12mm;top:-14mm}
-
-.gs-visual-art{position:absolute;inset:0;color:#0B72CE}
-.gs-mask-shape{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.gs-mask-body{width:72%;height:42%;border-radius:12mm;background:linear-gradient(180deg,#6BC0F4,#2B8FD4);position:relative;box-shadow:0 10mm 20mm rgba(8,43,92,.18)}
-.gs-mask-body:before,.gs-mask-body:after{content:"";position:absolute;top:10%;bottom:10%;width:5mm;background:#d7efff;border-radius:4mm}
-.gs-mask-body:before{left:7%}.gs-mask-body:after{right:7%}
-.gs-mask-fold{position:absolute;left:18%;right:18%;height:2px;background:rgba(255,255,255,.7)}
-.gs-mask-fold.f1{top:28%}.gs-mask-fold.f2{top:50%}.gs-mask-fold.f3{top:72%}
-.gs-mask-loop{position:absolute;width:34mm;height:48mm;border:3px solid #86c9ef;border-radius:50%;top:26%}
-.gs-mask-loop.left{left:3mm}.gs-mask-loop.right{right:3mm}
-.gs-scanner{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:56mm;height:88mm}
-.gs-scanner-head{position:absolute;top:0;left:8mm;width:40mm;height:22mm;border-radius:10mm;background:linear-gradient(145deg,#fff,#dbe8f5);box-shadow:0 5mm 12mm rgba(8,43,92,.18);border:1px solid #c7d8e9}
-.gs-scanner-neck{position:absolute;top:17mm;left:22mm;width:14mm;height:48mm;border-radius:8mm;background:linear-gradient(180deg,#eaf2f8,#b8ccdf)}
-.gs-scanner-base{position:absolute;bottom:0;left:12mm;width:34mm;height:24mm;border-radius:7mm;background:#0B72CE}
-.gs-scan-beam{position:absolute;bottom:-5mm;left:4mm;width:50mm;height:2px;background:linear-gradient(90deg,transparent,#29a4ff,transparent);box-shadow:0 0 8mm #29a4ff}
-.gs-bottle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:48mm;height:82mm}
-.gs-cap{width:26mm;height:13mm;margin:auto;background:#082B5C;border-radius:3mm 3mm 1mm 1mm}
-.gs-bottle-body{width:48mm;height:65mm;background:linear-gradient(180deg,#ffffff,#dfeaf4);border:1px solid #bfd0e2;border-radius:8mm;box-shadow:0 8mm 15mm rgba(8,43,92,.15);display:flex;align-items:center;justify-content:center}
-.gs-bottle-label{font-size:7pt;font-weight:800;color:#0B72CE;transform:rotate(-90deg)}
-.gs-syringe{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-12deg);width:84mm;height:24mm}
-.gs-syringe-plunger{position:absolute;left:0;top:7mm;width:18mm;height:10mm;background:#082B5C;border-radius:2mm}
-.gs-syringe-body{position:absolute;left:16mm;top:3mm;width:50mm;height:18mm;border:2px solid #0B72CE;border-radius:4mm;background:linear-gradient(90deg,#fff,#eaf4ff)}
-.gs-syringe-tip{position:absolute;right:0;top:10mm;width:22mm;height:3px;background:#0B72CE}
-.gs-material{position:absolute;inset:0}
-.gs-jar{position:absolute;left:18mm;bottom:22mm;width:48mm;height:45mm;border-radius:8mm 8mm 12mm 12mm;background:linear-gradient(180deg,#fefefe,#dfeaf5);border:1px solid #b7cade;box-shadow:0 8mm 15mm rgba(8,43,92,.15)}
-.gs-jar:before{content:"";position:absolute;left:-1px;right:-1px;top:-10mm;height:12mm;border-radius:5mm;background:#082B5C}
-.gs-cartridge{position:absolute;right:16mm;top:26mm;width:18mm;height:68mm;border-radius:7mm;background:linear-gradient(180deg,#0B72CE,#8fd0ff);transform:rotate(18deg);box-shadow:0 7mm 12mm rgba(8,43,92,.14)}
-.gs-tooth{position:absolute;width:38mm;height:46mm;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3}.gs-tooth svg{width:100%;height:100%}
-.gs-orbit{position:absolute;border:2px solid rgba(11,114,206,.22);border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-12deg)}.gs-orbit-a{width:76mm;height:76mm}.gs-orbit-b{width:98mm;height:48mm;transform:translate(-50%,-50%) rotate(22deg)}
-.gs-spark{position:absolute;width:5mm;height:5mm;border-radius:50%;background:#0B72CE}.gs-s1{left:20%;top:24%}.gs-s2{right:18%;bottom:20%;width:3mm;height:3mm}.gs-s3{right:20%;top:20%;width:2mm;height:2mm}
-.gs-features{display:grid;grid-template-columns:repeat(2,1fr);gap:4mm 6mm;margin-top:2mm}
-.gs-feature{min-height:23mm;border-radius:5mm;background:#f4f9ff;padding:4.5mm 5mm;display:grid;grid-template-columns:11mm 1fr;gap:3mm;align-items:center;font-size:10.5pt;line-height:1.3;font-weight:650;border:1px solid #e3eef8}
-.gs-feature-num{width:10mm;height:10mm;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#082B5C;color:#fff;font-size:7.5pt;font-weight:900}
-.gs-bottom{margin-top:auto}.gs-cta{margin-top:6mm;background:#082B5C;color:#fff;border-radius:6mm;padding:5.5mm 7mm;display:flex;align-items:center;justify-content:space-between;gap:5mm}
-.gs-cta strong{font-size:15pt;letter-spacing:.1px}.gs-cta-arrow{width:12mm;height:12mm;border-radius:50%;background:#0B72CE;display:flex;align-items:center;justify-content:center;font-size:18pt}
-.gs-footer{font-size:8pt;color:#68758A;padding-top:3mm;text-align:center;min-height:7mm}
-.gs-split_offer .gs-top{grid-template-columns:.9fr 1.1fr}.gs-split_offer .gs-left{order:2}.gs-split_offer .gs-visual{order:1;height:118mm}.gs-split_offer .gs-title{font-size:34pt}
-.gs-catalog_clean .gs-top{grid-template-columns:1fr;min-height:auto;padding-bottom:5mm}.gs-catalog_clean .gs-visual{height:62mm}.gs-catalog_clean .gs-left{display:grid;grid-template-columns:1fr auto;gap:8mm;align-items:end}.gs-catalog_clean .gs-title{font-size:31pt}.gs-catalog_clean .gs-subtitle{margin-bottom:0}
-.gs-course_master .gs-title{font-size:34pt}.gs-course_master .gs-price-wrap{background:#082B5C}.gs-course_master .gs-visual{background:linear-gradient(145deg,#f7f9fc,#e7eff8)}
-@media print{html,body{width:210mm;height:297mm}.page{page-break-after:always}}
-</style></head><body>
-<div class="page gs-${template}"><div class="gs-shell">
-<div class="gs-brand"><div><div class="gs-logo">MACRO<span>DENTAL</span></div><div class="gs-brand-sub">Soluzioni odontoiatriche professionali</div></div><div class="gs-brand-sub">${escHtml(s.tone||"commercial")}</div></div>
-<section class="gs-top"><div class="gs-left">${eyebrow?`<div class="gs-eyebrow">${eyebrow}</div>`:""}<h1 class="gs-title">${title}</h1>${subtitle?`<div class="gs-subtitle">${subtitle}</div>`:""}${product?`<div class="gs-product">${product}</div>`:""}${priceBlock}</div><div class="gs-visual">${visual}</div></section>
-${featureHtml?`<section class="gs-features">${featureHtml}</section>`:""}
-<div class="gs-bottom"><div class="gs-cta"><strong>${cta}</strong><div class="gs-cta-arrow">→</div></div><div class="gs-footer">${footer}</div></div>
-</div></div></body></html>`;
+ const s={...(spec||{})}, source=String(s.source_request||'');
+ const e=escHtml;
+ const price=gsExtractPriceFromRequest(source)||s.price||'';
+ const notes=String(s.price_note||gsExtractIvaFromRequest(source)||'');
+ const title=String(s.title||s.product_name||'Offerta Macrodental');
+ const product=String(s.product_name||'');
+ const images=(s.product_images||[]).filter(f=>/^data:image\/(png|jpeg|webp);base64,/i.test(f.dataUrl||'')).slice(0,4);
+ const features=[...new Set((s.features||[]).map(f=>gsSafeFeatureText(f,source)).filter(Boolean))].filter(f=>!notes.toLowerCase().includes(f.toLowerCase().replace(/^confezione da /,''))).slice(0,3);
+ const logo=/^data:image\/(png|jpeg|webp);base64,/i.test(s.logo_image||'')?'<img class="logo" src="'+e(s.logo_image)+'" alt="Macrodental">':'<div class="wordmark">MACRO<span>DENTAL</span></div>';
+ const visuals=images.map(f=>'<img src="'+e(f.dataUrl)+'" alt="'+e(product||title)+'">').join('');
+ const headlineSize=title.length>80?30:title.length>50?36:45;
+ return '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>'+e(title)+'</title><style>'+ 
+ '@page{size:A4;margin:0}*{box-sizing:border-box}html,body{margin:0;background:#fff;color:#102b48;font-family:Arial,Helvetica,sans-serif}.page{width:210mm;height:297mm;position:relative;padding:15mm 16mm 13mm;display:flex;flex-direction:column;overflow:hidden;background:#fff}.accent{position:absolute;top:0;left:0;width:100%;height:3mm;background:#087dbd}.brand{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #dbe4eb;padding-bottom:7mm;flex-shrink:0}.wordmark{font-size:26pt;font-weight:900;letter-spacing:-1.2px}.wordmark span{color:#0786c4}.logo{max-width:67mm;max-height:18mm;object-fit:contain}.edition{font-size:8pt;letter-spacing:1.6px;color:#536a7a;text-transform:uppercase}.eyebrow{font-size:9pt;letter-spacing:2px;color:#087dbd;text-transform:uppercase;font-weight:700;margin:9mm 0 4mm}.headline{font-size:'+headlineSize+'pt;line-height:1.02;letter-spacing:-1.3px;margin:0;font-weight:900;overflow-wrap:anywhere}.subtitle{font-size:13pt;line-height:1.4;margin:4mm 0 0;color:#4d6475;max-width:165mm}.visual{height:86mm;margin:7mm 0 5mm;display:flex;align-items:center;justify-content:center;gap:5mm;flex-shrink:0;background:#f2f7fa;border-radius:3mm;padding:5mm}.visual img{min-width:0;max-width:100%;width:auto;height:100%;object-fit:contain;flex:1}.offer{background:#092d50;color:#fff;padding:7mm 8mm;display:flex;justify-content:space-between;align-items:center;gap:5mm;border-radius:3mm;margin-top:7mm;flex-shrink:0}.offerlabel{font-size:9pt;letter-spacing:1.7px;text-transform:uppercase;margin-bottom:3mm;color:#a9daf0}.price{font-size:'+(price.length>10?38:52)+'pt;line-height:1;letter-spacing:-1px;font-weight:900;white-space:nowrap}.note{max-width:70mm;font-size:12pt;line-height:1.5;text-align:right}.features{display:flex;gap:6mm;margin-top:7mm;flex-shrink:0}.feature{flex:1;border-top:2px solid #1491c6;padding-top:3mm;font-size:11pt;line-height:1.4;color:#24465c;overflow-wrap:anywhere}.footer{margin-top:auto;padding-top:7mm;flex-shrink:0}.cta{font-size:17pt;font-weight:700;line-height:1.2;max-width:170mm;overflow-wrap:anywhere}.fine{font-size:8pt;line-height:1.4;color:#526b7d;margin-top:3mm;padding-top:4mm;border-top:1px solid #dbe4eb}.editorial{margin:9mm 0 2mm;padding:8mm 0;border-top:1px solid #dbe4eb;border-bottom:1px solid #dbe4eb;font-size:22pt;line-height:1.15;font-weight:700;letter-spacing:-.5px;color:#087dbd}.page.no-photo .headline{margin-top:5mm;font-size:'+Math.min(headlineSize+7,52)+'pt}.page.no-photo .offer{margin-top:12mm;padding-top:10mm;padding-bottom:10mm}.page.no-photo .features{margin-top:11mm}@media print{html,body{width:210mm;height:297mm;print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><article class="page '+(images.length?'':'no-photo')+'"><div class="accent"></div><header class="brand">'+logo+'<div class="edition">'+e(s.eyebrow||'Offerte professionali')+'</div></header><div class="eyebrow">'+e(s.promo_badge||'In evidenza')+'</div><h1 class="headline">'+e(title)+'</h1>'+(s.subtitle?'<p class="subtitle">'+e(s.subtitle)+'</p>':'')+(images.length?'<section class="visual">'+visuals+'</section>':(product&&product.toLowerCase()!==title.toLowerCase()?'<div class="editorial">'+e(product)+'</div>':''))+(price?'<section class="offer"><div><div class="offerlabel">Prezzo offerta</div><div class="price">'+e(price)+'</div></div><div class="note">'+e(notes)+'</div></section>':(notes?'<p class="subtitle">'+e(notes)+'</p>':''))+(features.length?'<section class="features">'+features.map(f=>'<div class="feature">'+e(f)+'</div>').join('')+'</section>':'')+'<footer class="footer"><div class="cta">'+e(s.cta||'Contatta il tuo referente Macrodental')+'</div><div class="fine">'+e(s.footer||'Macrodental')+'</div></footer></article></body></html>';
 }
 
 function isGraphicsStudioSpecFile(f){
@@ -358,6 +279,9 @@ async function materializeGraphicsStudio(files,userText){
  if(!specFile)return files||[];
  const spec=parseGraphicsStudioSpecFile(specFile);
  if(!spec)return files||[];
+ const pictures=attached.filter(f=>f.kind==='image' && /^data:image\/(png|jpeg|webp);base64,/i.test(f.dataUrl||''));
+ spec.product_images=pictures.filter(f=>!/logo|marchio/i.test(f.name)).slice(0,4);
+ spec.logo_image=pictures.find(f=>/logo|marchio/i.test(f.name))?.dataUrl||'';
  const html=graphicsStudioRenderHTML(spec);
  const base=(spec.product_name||spec.title||"volantino_macrodental").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,70)||"volantino_macrodental";
  return [{name:`${base}.html`,content:html},...(files||[]).filter(f=>!isGraphicsStudioSpecFile(f))];
@@ -368,7 +292,8 @@ function loadExternalScript(src,globalCheck){
    if(globalCheck && globalCheck()){resolve();return;}
    const existing=[...document.scripts].find(s=>s.src===src);
    if(existing){
-     const wait=()=>globalCheck&&globalCheck()?resolve():setTimeout(wait,100);
+     const deadline=Date.now()+15000;
+     const wait=()=>globalCheck&&globalCheck()?resolve():Date.now()>deadline?reject(new Error('Timeout caricamento renderer')):setTimeout(wait,100);
      wait();return;
    }
    const s=document.createElement('script');
@@ -449,6 +374,7 @@ async function renderHtmlPagesToCanvases(file){
  iframe.style.border='0';
  iframe.style.background='#fff';
  iframe.setAttribute('aria-hidden','true');
+ iframe.setAttribute('sandbox','allow-same-origin');
  document.body.appendChild(iframe);
 
  try{
@@ -468,12 +394,13 @@ async function renderHtmlPagesToCanvases(file){
 
    const canvases=[];
    for(const target of targets){
+     if(target.classList.contains('page') && target.scrollHeight>target.clientHeight+3)throw new Error('Il contenuto supera la pagina: riduci i testi prima di esportare.');
      const rect=target.getBoundingClientRect();
      const width=Math.max(1,Math.ceil(rect.width || target.scrollWidth || 794));
      const height=Math.max(1,Math.ceil(rect.height || target.scrollHeight || 1123));
 
      const canvas=await window.html2canvas(target,{
-       scale:2,
+       scale:300/96,
        useCORS:true,
        allowTaint:false,
        backgroundColor:'#ffffff',
@@ -543,7 +470,7 @@ async function renderHtmlArtifact(file,formats=['png'],showStatus=true){
        const x=(pageW-w)/2;
        const y=(pageH-h)/2;
 
-       pdf.addImage(c.toDataURL('image/jpeg',0.94),'JPEG',x,y,w,h,undefined,'FAST');
+       pdf.addImage(c.toDataURL('image/png'),'PNG',x,y,w,h,undefined,'FAST');
      }
      addBlobDownload(`${base}.pdf`,pdf.output('blob'));
    }
@@ -561,7 +488,7 @@ function requestedGraphicsFormats(text){
  if(/\bpng\b/.test(t))out.push('png');
  if(/\b(jpg|jpeg)\b/.test(t))out.push('jpg');
  if(/\bpdf\b/.test(t))out.push('pdf');
- if(!out.length && /\b(immagine|image)\b/.test(t) && /\b(volantino|locandina|poster|brochure|grafica|flyer)\b/.test(t))out.push('png');
+ if(!out.length && /\b(volantino|locandina|poster|brochure|grafica|flyer)\b/.test(t))out.push('png','pdf');
  return out;
 }
 
@@ -973,7 +900,7 @@ async function showRouterStatus(){
    const j=await api('router_status');
    const f=j.freellmapi||{};
    const o=j.openrouter||{};
-   let msg='AI ROUTER FULL 2.9.2 VISUAL FACTS LOCK.1 GRAPHICS LITE.1 FILE PARSER FIX\n\n';
+   let msg='AI ROUTER FULL 2.10 GRAPHICS\n\n';
    msg+=`FreeLLMAPI: ${f.configured?'configurato':'non configurato'}\n`;
    if(f.configured){
      msg+=`Connessione: ${f.reachable===true?'OK':f.reachable===false?'NON RAGGIUNGIBILE':'non verificata'}\n`;
@@ -1106,7 +1033,7 @@ function bindUI(){
     }
   });
 
-  setStatus('Interfaccia FULL 2.9.2 VISUAL FACTS LOCK.1 GRAPHICS LITE.1 FILE PARSER FIX pronta.');
+  setStatus('Interfaccia FULL 2.10 GRAPHICS pronta.');
 }
 
 document.addEventListener('DOMContentLoaded', async ()=>{
