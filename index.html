@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FULL 2.10 GRAPHICS</title>
+<title>FULL 2.11 WEB PHOTOS</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
 <style>
 :root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
@@ -29,7 +29,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 
 <div id="app" class="app hidden">
-<div class="top"><h1>🤖 Assistente Stefano FULL 2.10 GRAPHICS</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
+<div class="top"><h1>🤖 Assistente Stefano FULL 2.11 WEB PHOTOS</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
 <div id="uiStatus" class="small" style="margin:0 0 8px 4px">Interfaccia pronta.</div>
 <div id="autoJobStatus" class="small hidden" style="margin:0 0 8px 4px;padding:8px 10px;background:#111a31;border-radius:9px"></div>
 <div class="grid">
@@ -65,6 +65,8 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <button id="btnLibrary" class="secondary" type="button">📚 Libreria</button>
   <button id="btnMemories" class="secondary" type="button">🧠 Memorie</button>
   <button id="btnStrategies" class="secondary" type="button">📈 Strategie apprese</button>
+  <button id="btnSearchPhoto" class="secondary" type="button">🔎 Cerca foto online</button>
+  <label class="panel"><input id="autoPhoto" type="checkbox" checked><span><b>Foto online automatiche</b><br><span class="small">Cerca il prodotto quando non alleghi foto</span></span></label>
   <button id="btnGraphicsStudio" class="secondary" type="button">🎨 Graphics Studio</button>
   <button id="btnAgents" class="secondary" type="button">🤖 Squadra AI</button>
   <button id="btnAutoRuns" class="secondary" type="button">🤖 Esecuzioni autonome</button>
@@ -74,7 +76,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <button id="btnRouter" class="secondary" type="button">🌐 Stato AI Router</button>
   <button id="btnNewChat" class="danger" type="button">Nuova conversazione</button>
   <button id="btnLogout" class="danger" type="button">Esci</button>
-  <div class="panel small">FULL 2.10 GRAPHICS: FULL 2.10 GRAPHICS: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
+  <div class="panel small">FULL 2.11 WEB PHOTOS: FULL 2.11 WEB PHOTOS: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
   <div class="panel small">Sandbox locale: Python/JavaScript/HTML. Email, calendario e trading richiedono connettori separati.</div>
 </aside>
 
@@ -277,6 +279,62 @@ function isGraphicsStudioSpecFile(f){
 function parseGraphicsStudioSpecFile(f){
  try{const obj=JSON.parse(String(f?.content||"{}"));return obj?.engine==="graphics_studio"?obj:null;}catch{return null;}
 }
+function gsPhotoQuery(text){
+ return String(text||'').replace(/\b(?:cerca|cercami|trova|trovami|foto|fotografie|immagini|online|internet|volantino|macrodental|fammi|creami|prepara|genera|professionale|png|pdf|jpg|jpeg)\b/gi,' ').replace(/(?:prezzo\s*)?€?\s*\d[\d., ]*\s*€(?:\s*\+\s*iva)?/gi,' ').replace(/\biva\s*\d*\s*%?/gi,' ').replace(/\b(?:(?:confezione|conf\.?|da)\s*)?\d+\s*(?:pezzi|pz)\b/gi,' ').replace(/\b(?:di|per|un|una|il|lo|la|su|in|e)\b/gi,' ').replace(/[.,;:!?]+$/,'').replace(/\s+/g,' ').trim().slice(0,180);
+}
+
+async function gsFindWebPhoto(query,automatic=false){
+ setStatus('Cerco foto online: '+query+'…');
+ const result=await api('graphics_image_search',{query});
+ const usable=[];
+ for(const candidate of result.images||[]){
+   if(!/^data:image\/(png|jpeg|webp);base64,/i.test(candidate.dataUrl||''))continue;
+   const size=await new Promise(resolve=>{const img=new Image();img.onload=()=>resolve([img.naturalWidth,img.naturalHeight]);img.onerror=()=>resolve([0,0]);img.src=candidate.dataUrl;});
+   if(Math.min(...size)>=160&&Math.max(...size)>=450)usable.push(candidate);
+ }
+ if(!usable.length){add('assistant',result.warning||'Non ho trovato foto sufficientemente grandi. Allega la foto originale.');return null;}
+ const exact=usable.filter(c=>c.exact);
+ if(automatic&&exact.length){
+   const selected=exact[0];gsShowPhotoSource(selected);return selected;
+ }
+ return await new Promise(resolve=>{
+   const dialog=document.createElement('dialog');
+   dialog.style.cssText='max-width:880px;width:94vw;border:1px solid #c9d6e4;border-radius:18px;padding:22px;background:#fff;color:#102b48';
+   const title=document.createElement('h2');title.textContent='Scegli la foto del prodotto';dialog.appendChild(title);
+   const help=document.createElement('p');help.textContent='Controlla marca e modello. Le fonti sono indicate sotto ogni immagine.';dialog.appendChild(help);
+   const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px';dialog.appendChild(grid);
+   let settled=false;
+   const finish=value=>{if(settled)return;settled=true;dialog.close();dialog.remove();if(value)gsShowPhotoSource(value);resolve(value);};
+   for(const candidate of usable){
+     const card=document.createElement('div');card.style.cssText='border:1px solid #dbe4eb;border-radius:12px;padding:12px';
+     const image=document.createElement('img');image.src=candidate.dataUrl;image.alt=candidate.caption||query;image.style.cssText='width:100%;height:180px;object-fit:contain';card.appendChild(image);
+     const name=document.createElement('p');name.textContent=candidate.caption;name.style.cssText='font-size:13px;line-height:1.4';card.appendChild(name);
+     const source=document.createElement('a');source.href=candidate.source_url;source.target='_blank';source.rel='noopener noreferrer';source.textContent='Vedi fonte';source.style.cssText='display:block;margin:8px 0';card.appendChild(source);
+     const use=document.createElement('button');use.textContent='Usa questa foto';use.className='primary';use.onclick=()=>finish(candidate);card.appendChild(use);grid.appendChild(card);
+   }
+   const skip=document.createElement('button');skip.textContent='Continua senza foto';skip.className='secondary';skip.style.marginTop='18px';skip.onclick=()=>finish(null);dialog.appendChild(skip);
+   dialog.addEventListener('cancel',e=>{e.preventDefault();finish(null)});document.body.appendChild(dialog);dialog.showModal();
+ });
+}
+
+function gsShowPhotoSource(photo){
+ const box=document.createElement('div');box.className='download';
+ const text=document.createElement('b');text.textContent='Foto dal web: '+(photo.caption||'prodotto');box.appendChild(text);
+ const source=document.createElement('a');source.href=photo.source_url;source.target='_blank';source.rel='noopener noreferrer';source.textContent='Apri la fonte';source.className='dl';box.appendChild(document.createElement('br'));box.appendChild(source);chat.appendChild(box);
+}
+
+async function searchGraphicsPhoto(){
+ const query=prompt('Quale prodotto cerco? Scrivi marca e modello, se disponibili.',gsPhotoQuery($('input').value));
+ if(!query?.trim())return;
+ try{
+   const photo=await gsFindWebPhoto(query.trim(),false);if(!photo)return;
+   attached=attached.filter(f=>f.source!=='web');
+   attached.push({name:'foto_prodotto_web.'+(photo.dataUrl.startsWith('data:image/png')?'png':photo.dataUrl.startsWith('data:image/webp')?'webp':'jpg'),kind:'image',mime:photo.dataUrl.slice(5,photo.dataUrl.indexOf(';')),dataUrl:photo.dataUrl,source:'web',source_url:photo.source_url});
+   $('fileStatus').textContent=attached.map(f=>f.name).join(', ');$('clearFiles').classList.remove('hidden');setStatus('Foto pronta: scrivi la richiesta del volantino.');
+ }catch(e){setStatus('Ricerca foto: '+(e.message||e),true);}
+}
+
+
 async function materializeGraphicsStudio(files,userText){
  const specFile=(files||[]).find(isGraphicsStudioSpecFile);
  if(!specFile)return files||[];
@@ -285,6 +343,11 @@ async function materializeGraphicsStudio(files,userText){
  const pictures=attached.filter(f=>f.kind==='image' && /^data:image\/(png|jpeg|webp);base64,/i.test(f.dataUrl||''));
  spec.product_images=pictures.filter(f=>!/logo|marchio/i.test(f.name)).slice(0,4);
  spec.logo_image=pictures.find(f=>/logo|marchio/i.test(f.name))?.dataUrl||'';
+ if(!spec.product_images.length && $('autoPhoto')?.checked && !/senza\s+(?:foto|immagini)|non\s+cercare/i.test(userText)){
+   const query=gsPhotoQuery(userText).split(/[,;.!]/)[0].trim()||gsPhotoQuery(spec.product_name);
+   if(query.length>=3){try{const photo=await gsFindWebPhoto(query,true);if(photo){spec.product_images=[{name:query,dataUrl:photo.dataUrl}];spec.image_source=photo.source_url;}}catch(e){add('assistant','Ricerca foto non disponibile: procedo con il layout senza foto.');}}
+ }
+
  const html=graphicsStudioRenderHTML(spec);
  const base=(spec.product_name||spec.title||"volantino_macrodental").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,70)||"volantino_macrodental";
  return [{name:`${base}.html`,content:html},...(files||[]).filter(f=>!isGraphicsStudioSpecFile(f))];
@@ -935,7 +998,7 @@ async function showRouterStatus(){
    const j=await api('router_status');
    const f=j.freellmapi||{};
    const o=j.openrouter||{};
-   let msg='AI ROUTER FULL 2.10 GRAPHICS\n\n';
+   let msg='AI ROUTER FULL 2.11 WEB PHOTOS\n\n';
    msg+=`FreeLLMAPI: ${f.configured?'configurato':'non configurato'}\n`;
    if(f.configured){
      msg+=`Connessione: ${f.reachable===true?'OK':f.reachable===false?'NON RAGGIUNGIBILE':'non verificata'}\n`;
@@ -1042,6 +1105,7 @@ function bindUI(){
   safeBind('btnMemories','click',showMemories);
   safeBind('btnStrategies','click',showStrategies);
   safeBind('btnGraphicsStudio','click',showGraphicsStudio);
+  safeBind('btnSearchPhoto','click',searchGraphicsPhoto);
   safeBind('btnAgents','click',showAgentsCatalog);
   safeBind('btnAutoRuns','click',showAutoRuns);
   safeBind('btnSelfAudit','click',runSelfAudit);
@@ -1068,7 +1132,7 @@ function bindUI(){
     }
   });
 
-  setStatus('Interfaccia FULL 2.10 GRAPHICS pronta.');
+  setStatus('Interfaccia FULL 2.11 WEB PHOTOS pronta.');
 }
 
 document.addEventListener('DOMContentLoaded', async ()=>{
