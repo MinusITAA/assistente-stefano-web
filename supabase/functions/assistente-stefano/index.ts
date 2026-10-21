@@ -2380,6 +2380,7 @@ Deno.serve(async(req)=>{
       });
     }
 
+    if(action==="delivery_check"){return json({quality:deliveryQuality(String(body.message||""),Array.isArray(body.files)?body.files:[])});}
     if(action==="delivery_save_repair"){
       const id=String(body.message_id||'');if(!/^(?:[1-9][0-9]*|[a-f0-9]{8}-[a-f0-9-]{27})$/i.test(id))return json({error:"Messaggio non valido"},400);
       const {error}=await supabase.from("messages").update({content:String(body.answer||"").slice(0,100000)}).eq("id",id).eq("user_id",USER_ID).eq("role","assistant");if(error)throw error;
