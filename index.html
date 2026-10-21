@@ -950,7 +950,7 @@ async function checkAndRepairDelivery(result,text){
   const fixed=await api('delivery_repair',{message:text,answer:result.answer,files:result.generated_files});
   if(fixed.repaired){
    const combined={...result,...fixed};
-   // Aggiorna il risultato gia registrato, senza perdere le versioni nel progetto.
+   // Aggiorna il risultato gia registrato nel progetto attivo.
    try{if(result.message_id)await api('delivery_save_repair',{message_id:result.message_id,answer:combined.answer,files:combined.generated_files,project_id:result.active_project_id||null});}
    catch(e){combined.warning='File corretti disponibili qui; salvataggio della correzione non riuscito: '+(e?.message||String(e));}
    return combined;
