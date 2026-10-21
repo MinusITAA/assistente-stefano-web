@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FULL 2.13 AUTONOMY</title>
+<title>FULL 2.14 EXECUTOR</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
 <style>
 :root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
@@ -29,7 +29,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 
 <div id="app" class="app hidden">
-<div class="top"><h1>🤖 Assistente Stefano FULL 2.13 AUTONOMY</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
+<div class="top"><h1>🤖 Assistente Stefano FULL 2.14 EXECUTOR</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
 <div id="uiStatus" class="small" style="margin:0 0 8px 4px">Interfaccia pronta.</div>
 <div id="autoJobStatus" class="small hidden" style="margin:0 0 8px 4px;padding:8px 10px;background:#111a31;border-radius:9px"></div>
 <div class="grid">
@@ -44,6 +44,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <label class="panel"><input id="deep" type="checkbox"><span><b>Deep mode</b><br><span class="small">Planner + reviewer</span></span></label>
   <label class="panel"><input id="smartAuto" type="checkbox" checked><span><b>Esecuzione intelligente</b><br><span class="small">Sceglie il flusso e controlla i file; prova una correzione se serve</span></span></label>
   <label class="panel"><input id="autonomous" type="checkbox"><span><b>Autonomous mode</b><br><span class="small">Planner + 3 agenti + reviewer • job separati</span></span></label>
+  <details class="panel" style="display:block"><summary>Esecutore locale</summary><div class="small">Cartella dedicata e browser separato. Avvia il programma locale e inserisci qui il codice temporaneo.</div><input id="executorCode" type="password" autocomplete="off" placeholder="Codice di abbinamento"><button id="btnExecutorConnect" type="button">Collega esecutore</button><button id="btnExecutorDisconnect" type="button">Scollega</button><label><input id="useExecutor" type="checkbox"> Usa esecutore per questa richiesta</label><div id="executorStatus" class="small">Non collegato</div><button id="btnExecutorStop" type="button">Ferma dopo il passo corrente</button></details>
   <div class="small">Squadra AI</div>
   <select id="team">
     <option value="auto" selected>✨ Auto — scegli la squadra</option>
@@ -79,7 +80,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <button id="btnRouter" class="secondary" type="button">🌐 Stato AI Router</button>
   <button id="btnNewChat" class="danger" type="button">Nuova conversazione</button>
   <button id="btnLogout" class="danger" type="button">Esci</button>
-  <div class="panel small">FULL 2.13 AUTONOMY: FULL 2.13 AUTONOMY: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
+  <div class="panel small">FULL 2.14 EXECUTOR: FULL 2.14 EXECUTOR: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
   <div class="panel small">Sandbox locale: Python/JavaScript/HTML. Email, calendario e trading richiedono connettori separati.</div>
 </aside>
 
@@ -959,6 +960,50 @@ async function checkAndRepairDelivery(result,text){
  }catch(e){return {...result,warning:'Riparazione non disponibile; file originali conservati: '+(e?.message||String(e))};}
  finally{setAutoJobStatus('',false);}
 }
+
+let executorSession=null,executorStop=false;
+async function localExecutor(route,data={}){
+ const response=await fetch('http://127.0.0.1:8787'+route,{method:'POST',headers:{'Content-Type':'application/json',...(executorSession?{'Authorization':'Bearer '+executorSession.token}:{})},body:JSON.stringify(data),signal:AbortSignal.timeout(30000)});
+ const result=await response.json();if(!response.ok)throw new Error(result.error||'Esecutore non disponibile');return result;
+}
+async function connectExecutor(){
+ try{executorSession=await localExecutor('/pair',{code:$('executorCode').value.trim()});$('executorCode').value='';$('useExecutor').checked=true;$('executorStatus').textContent='Collegato per un massimo di 60 minuti. Cartella: '+executorSession.workspace;}
+ catch(e){setStatus('Collegamento esecutore: '+(e?.message||String(e)),true);}
+}
+async function disconnectExecutor(){
+ executorStop=true;try{if(executorSession)await localExecutor('/disconnect');}finally{executorSession=null;$('useExecutor').checked=false;$('executorStatus').textContent='Non collegato';}
+}
+async function runConnectedExecutor(text,files,wait){
+ executorStop=false;const observations=[];const start=Date.now();
+ try{
+  if(!executorSession||Date.now()>=executorSession.expires)throw new Error('Collega prima l’esecutore locale.');
+  // Gli allegati rimangono dati della richiesta; solo file testuali esplicitamente allegati.
+  for(const file of files){
+   if(file.kind==='image'||typeof file.content!=='string')continue;
+   const action={tool:'files.write',path:file.name,content:file.content};
+   const r=await localExecutor('/execute',{action});observations.push({action,result:r.result});
+  }
+  for(let i=0;i<12;i++){
+   if(executorStop||Date.now()-start>300000)break;
+   setAutoJobStatus('Esecutore: passo '+(i+1)+'/12.');
+   const next=await api('executor_step',{message:text,tools:executorSession.tools,observations});
+   if(next.status!=='tool'){wait.remove();add('assistant',next.message);setStatus(next.status==='done'?'Esecuzione locale completata.':'Esecuzione locale: collegamento o intervento necessario.',next.status!=='done');return;}
+   if(executorStop)break;
+   setAutoJobStatus('Esecutore: '+next.message);
+   try{
+    const executed=await localExecutor('/execute',{action:next.action});
+    const result={...executed.result};
+    if(next.action.tool==='files.write'&&result.verified)addDownload({name:next.action.path,content:next.action.content});
+    if(result.image){const img=document.createElement('img');img.src=result.image;img.style.maxWidth='100%';img.alt='Screenshot verificato dall’esecutore';chat.appendChild(img);delete result.image;result.screenshot_captured=true;}
+    observations.push({action:{tool:next.action.tool,path:next.action.path,url:next.action.url},result});
+    add('assistant','Passo '+(i+1)+': '+next.action.tool+(next.action.path?' — '+next.action.path:'')+' completato.');
+   }catch(e){observations.push({action:{tool:next.action.tool,path:next.action.path},error:e?.message||String(e)});}
+  }
+  wait.remove();add('assistant',executorStop?'Esecuzione fermata. I passi completati sono conservati.':'Raggiunto il limite di 12 passi o 5 minuti. Il lavoro non è dichiarato completato.');
+ }catch(e){wait.remove();add('assistant','Esecutore: '+(e?.message||String(e)));}
+ finally{setAutoJobStatus('',false);}
+}
+
 let sending=false;
 async function sendMsg(){
  if(sending)return;
@@ -977,6 +1022,7 @@ async function sendMsgCore(){
  add('assistant',useAutonomous?'Avvio squadra multi-agente…':'Sto elaborando…');
  const wait=chat.lastChild;
 
+ if($('useExecutor').checked){await runConnectedExecutor(text||'Analizza gli allegati.',filesSnapshot,wait);return;}
  if(useAutonomous){
    await runAutonomousJob(text||'[Analizza allegati]',filesSnapshot,wait);
    return;
@@ -1085,7 +1131,7 @@ async function showRouterStatus(){
    const j=await api('router_status');
    const f=j.freellmapi||{};
    const o=j.openrouter||{};
-   let msg='AI ROUTER FULL 2.13 AUTONOMY\n\n';
+   let msg='AI ROUTER FULL 2.14 EXECUTOR\n\n';
    msg+=`FreeLLMAPI: ${f.configured?'configurato':'non configurato'}\n`;
    if(f.configured){
      msg+=`Connessione: ${f.reachable===true?'OK':f.reachable===false?'NON RAGGIUNGIBILE':'non verificata'}\n`;
@@ -1196,6 +1242,9 @@ function bindUI(){
   safeBind('btnAgents','click',showAgentsCatalog);
   safeBind('btnAutoRuns','click',showAutoRuns);
   safeBind('btnSelfAudit','click',runSelfAudit);
+  safeBind('btnExecutorConnect','click',connectExecutor);
+  safeBind('btnExecutorDisconnect','click',disconnectExecutor);
+  safeBind('btnExecutorStop','click',()=>{executorStop=true;});
   safeBind('btnDeliveryCheck','click',runDeliveryCheck);
   safeBind('btnSecurityAudit','click',runSecurityAudit);
   safeBind('btnImprovements','click',showImprovements);
@@ -1221,7 +1270,7 @@ function bindUI(){
     }
   });
 
-  setStatus('Interfaccia FULL 2.13 AUTONOMY pronta.');
+  setStatus('Interfaccia FULL 2.14 EXECUTOR pronta.');
 }
 
 document.addEventListener('DOMContentLoaded', async ()=>{
