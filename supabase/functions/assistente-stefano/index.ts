@@ -1338,11 +1338,12 @@ function graphicsImageCandidates(rows:any[],query:string){
     for(const m of String(row.content||"").matchAll(/!\[([^\]]*)\]\((https:\/\/[^\s)]+)\)/g))found.push({caption:m[1],url:m[2]});
     for(const f of found){
       const url=graphicsPublicURL(String(f.url||""));if(!url||out.some(x=>x.image_url===url.href))continue;
-      const identity=norm(f.caption+' '+decodeURIComponent(url.pathname));
+      let filename=url.pathname;try{filename=decodeURIComponent(filename);}catch{}
+      const identity=norm(f.caption+' '+filename+' '+source.hostname);
       if(/logo|favicon|sprite|banner|avatar|payment|paypal|visa|mastercard|cookie|tracking|placeholder|whatsapp|facebook|instagram/.test(identity))continue;
       if(/\.svg(?:$|\?)/i.test(url.href))continue;
       if(/accessor|ricambi|puntali|sleeves|cover|cable|cavo/.test(identity)&&!/accessor|ricambi|puntali|sleeves|cover|cable|cavo/.test(norm(query)))continue;
-      const page=norm(row.title+' '+row.description+' '+String(row.content||'').slice(0,1800));
+      const page=norm(row.title+' '+row.description+' '+source.href+' '+String(row.content||'').slice(0,16000));
       const exact=tokens.length>0&&tokens.every(t=>identity.includes(t));
       const pageMatch=tokens.length>0&&tokens.every(t=>page.includes(t));
       if(!exact&&!pageMatch)continue;
@@ -1384,11 +1385,22 @@ async function graphicsImageSearch(queryRaw:string){
   });
   if(!r.ok)return{images:[],warning:`Ricerca foto non disponibile (HTTP ${r.status}).`};
   const result=await r.json(),rows=Array.isArray(result.data)?result.data:[];
-  const candidates=graphicsImageCandidates(rows,query),images:any[]=[];
+  let candidates=graphicsImageCandidates(rows,query);const images:any[]=[];
+  // Search results may contain snippets without image summaries. Retrieve the
+  // actual product pages through Reader before deciding no photo is available.
+  if(candidates.length<2){
+    const pages=await Promise.allSettled(rows.slice(0,3).map(async (row:any)=>{
+      const source=graphicsPublicURL(String(row.url||''));if(!source)throw new Error('Fonte non valida');
+      const page=await fetch('https://r.jina.ai/'+source.href,{headers:{Authorization:`Bearer ${JINA_API_KEY}`,Accept:'application/json','X-Retain-Images':'all','X-With-Images-Summary':'true','X-Timeout':'12'},signal:AbortSignal.timeout(16000)});
+      if(!page.ok)throw new Error('Pagina non disponibile');const parsed=await page.json();return{...row,...parsed.data,url:source.href};
+    }));
+    for(const page of pages)if(page.status==='fulfilled')rows.push(page.value);
+    candidates=graphicsImageCandidates(rows.slice(3).concat(rows.slice(0,3)),query);
+  }
   // Bound time and payload. A failed host never prevents trying the next one.
   const downloaded=await Promise.allSettled(candidates.slice(0,4).map(async c=>({...c,dataUrl:await graphicsRasterDataURL(c.image_url)})));
   for(const item of downloaded)if(item.status==='fulfilled')images.push(item.value);
-  return {query,images:images.slice(0,3),warning:images.length?'':'Nessuna foto utilizzabile trovata. Puoi allegare la foto originale.'};
+  return {query,images:images.slice(0,3),diagnostics:{sources:rows.length,candidates:candidates.length,downloaded:images.length,errors:downloaded.filter(x=>x.status==='rejected').map((x:any)=>errorText(x.reason))},warning:images.length?'':'Nessuna foto utilizzabile trovata. Puoi allegare la foto originale.'};
 }
 
 
