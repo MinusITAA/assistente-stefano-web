@@ -324,8 +324,22 @@ function gsShowPhotoSource(photo){
 }
 
 async function searchGraphicsPhoto(){
- const query=prompt('Quale prodotto cerco? Scrivi marca e modello, se disponibili.',gsPhotoQuery($('input').value));
- if(!query?.trim())return;
+ let panel=$('photoSearchPanel');
+ if(!panel){
+   panel=document.createElement('div');panel.id='photoSearchPanel';panel.className='bar';
+   const label=document.createElement('label');label.htmlFor='photoSearchQuery';label.textContent='Cerca foto del prodotto (marca e modello)';panel.appendChild(label);
+   const row=document.createElement('div');row.className='row';row.style.marginTop='8px';
+   const field=document.createElement('input');field.id='photoSearchQuery';field.placeholder='Es. Beautifil Flow Plus X Shofu';field.style.cssText='flex:1;min-width:180px';row.appendChild(field);
+   const search=document.createElement('button');search.type='button';search.className='primary';search.textContent='Cerca immagini';search.onclick=()=>gsRunPhotoSearch(field.value);row.appendChild(search);
+   const close=document.createElement('button');close.type='button';close.className='secondary';close.textContent='Chiudi ricerca';close.onclick=()=>panel.classList.add('hidden');row.appendChild(close);
+   field.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();gsRunPhotoSearch(field.value)}};
+   panel.appendChild(row);$('chat').parentNode.insertBefore(panel,$('chat').nextSibling);
+ }
+ panel.classList.remove('hidden');$('photoSearchQuery').value=gsPhotoQuery($('input').value);$('photoSearchQuery').focus();
+}
+
+async function gsRunPhotoSearch(query){
+ if(!String(query||'').trim())return;
  try{
    const photo=await gsFindWebPhoto(query.trim(),false);if(!photo)return;
    attached=attached.filter(f=>f.source!=='web');
