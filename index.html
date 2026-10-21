@@ -44,7 +44,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <label class="panel"><input id="deep" type="checkbox"><span><b>Deep mode</b><br><span class="small">Planner + reviewer</span></span></label>
   <label class="panel"><input id="smartAuto" type="checkbox" checked><span><b>Esecuzione intelligente</b><br><span class="small">Sceglie il flusso e controlla i file; prova una correzione se serve</span></span></label>
   <label class="panel"><input id="autonomous" type="checkbox"><span><b>Autonomous mode</b><br><span class="small">Planner + 3 agenti + reviewer • job separati</span></span></label>
-  <details class="panel" style="display:block"><summary>Esecutore locale</summary><div class="small">Cartella dedicata e browser separato. Avvia il programma locale e inserisci qui il codice temporaneo.</div><input id="executorCode" type="password" autocomplete="off" placeholder="Codice di abbinamento"><button id="btnExecutorConnect" type="button">Collega esecutore</button><button id="btnExecutorDisconnect" type="button">Scollega</button><label><input id="useExecutor" type="checkbox"> Usa esecutore per questa richiesta</label><div id="executorStatus" class="small">Non collegato</div><button id="btnExecutorStop" type="button">Ferma dopo il passo corrente</button></details>
+  <details class="panel" style="display:block"><summary>Esecutore locale</summary><div class="small">Cartella dedicata e browser separato. Avvia il programma locale e inserisci qui il codice temporaneo.</div><input id="executorCode" type="password" autocomplete="off" placeholder="Codice di abbinamento"><button id="btnExecutorPreview" type="button">Anteprima del primo passo</button><button id="btnExecutorConnect" type="button">Collega esecutore</button><button id="btnExecutorDisconnect" type="button">Scollega</button><label><input id="useExecutor" type="checkbox"> Usa esecutore per questa richiesta</label><div id="executorStatus" class="small">Non collegato</div><button id="btnExecutorStop" type="button">Ferma dopo il passo corrente</button></details>
   <div class="small">Squadra AI</div>
   <select id="team">
     <option value="auto" selected>✨ Auto — scegli la squadra</option>
@@ -966,6 +966,12 @@ async function localExecutor(route,data={}){
  const response=await fetch('http://127.0.0.1:8787'+route,{method:'POST',headers:{'Content-Type':'application/json',...(executorSession?{'Authorization':'Bearer '+executorSession.token}:{})},body:JSON.stringify(data),signal:AbortSignal.timeout(30000)});
  const result=await response.json();if(!response.ok)throw new Error(result.error||'Esecutore non disponibile');return result;
 }
+async function previewExecutor(){
+ try{
+  const next=await api('executor_step',{message:$('input').value.trim()||'Crea verifica_esecutore.json con {"ok":true} nella cartella dedicata e verifica JSON.',tools:['files.list','files.read','files.write','json.validate','javascript.check'],observations:[]});
+  add('assistant','Anteprima: nessuna azione locale eseguita.\n'+next.message+'\n'+JSON.stringify(next.action||{status:next.status},null,2));
+ }catch(e){setStatus('Anteprima esecutore: '+(e?.message||String(e)),true);}
+}
 async function connectExecutor(){
  try{executorSession=await localExecutor('/pair',{code:$('executorCode').value.trim()});$('executorCode').value='';$('useExecutor').checked=true;$('executorStatus').textContent='Collegato per un massimo di 60 minuti. Cartella: '+executorSession.workspace;}
  catch(e){setStatus('Collegamento esecutore: '+(e?.message||String(e)),true);}
@@ -1242,6 +1248,7 @@ function bindUI(){
   safeBind('btnAgents','click',showAgentsCatalog);
   safeBind('btnAutoRuns','click',showAutoRuns);
   safeBind('btnSelfAudit','click',runSelfAudit);
+  safeBind('btnExecutorPreview','click',previewExecutor);
   safeBind('btnExecutorConnect','click',connectExecutor);
   safeBind('btnExecutorDisconnect','click',disconnectExecutor);
   safeBind('btnExecutorStop','click',()=>{executorStop=true;});
