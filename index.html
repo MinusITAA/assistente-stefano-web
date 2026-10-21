@@ -412,6 +412,24 @@ async function renderHtmlPagesToCanvases(file){
        }
      }
      if(target.classList.contains('page') && target.scrollHeight>target.clientHeight+3)throw new Error('Il contenuto supera la pagina: riduci i testi prima di esportare.');
+     // html2canvas does not consistently honor object-fit. Give each loaded
+     // product image explicit dimensions calculated from its original ratio.
+     for(const visual of target.querySelectorAll('.visual')){
+       const pictures=[...visual.querySelectorAll('img')];
+       const style=doc.defaultView.getComputedStyle(visual);
+       const paddingX=parseFloat(style.paddingLeft)+parseFloat(style.paddingRight);
+       const paddingY=parseFloat(style.paddingTop)+parseFloat(style.paddingBottom);
+       const gap=parseFloat(style.columnGap)||0;
+       const cellWidth=(visual.clientWidth-paddingX-gap*Math.max(0,pictures.length-1))/Math.max(1,pictures.length);
+       const cellHeight=visual.clientHeight-paddingY;
+       for(const img of pictures){
+         if(!img.naturalWidth||!img.naturalHeight)throw new Error('Immagine prodotto non caricata: impossibile esportare.');
+         const ratio=Math.min(cellWidth/img.naturalWidth,cellHeight/img.naturalHeight);
+         img.style.width=(img.naturalWidth*ratio)+'px';
+         img.style.height=(img.naturalHeight*ratio)+'px';
+         img.style.flex='0 0 auto';
+       }
+     }
      const rect=target.getBoundingClientRect();
      const width=Math.max(1,Math.ceil(rect.width || target.scrollWidth || 794));
      const height=Math.max(1,Math.ceil(rect.height || target.scrollHeight || 1123));
