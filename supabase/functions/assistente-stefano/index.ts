@@ -1329,7 +1329,8 @@ function graphicsPublicURL(value:string){
 
 function graphicsImageCandidates(rows:any[],query:string){
   const norm=(v:any)=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-  const tokens=norm(query).match(/[a-z0-9]+/g)?.filter(t=>t.length>2&&!['foto','immagine','prodotto','ufficiale','macrodental'].includes(t))||[];
+  const tokens=norm(query).match(/[a-z0-9]+/g)?.filter(t=>!['foto','immagine','prodotto','ufficiale','macrodental','di','per','con','un','una','il','la','e','and','of','the'].includes(t))||[];
+  const matches=(hay:string,t:string)=>t.length<3?new RegExp('(?:^|[^a-z0-9])'+t+'(?:$|[^a-z0-9])').test(hay):hay.includes(t);
   const out:any[]=[];
   for(const row of rows.slice(0,5)){
     const source=graphicsPublicURL(String(row?.url||""));if(!source)continue;
@@ -1341,11 +1342,12 @@ function graphicsImageCandidates(rows:any[],query:string){
       let filename=url.pathname;try{filename=decodeURIComponent(filename);}catch{}
       const identity=norm(f.caption+' '+filename+' '+source.hostname);
       if(/logo|favicon|sprite|banner|avatar|payment|paypal|visa|mastercard|cookie|tracking|placeholder|whatsapp|facebook|instagram/.test(identity))continue;
+      if(/shade.?chart|scala.?color|farbkarte/.test(identity)&&!/shade.?chart|scala.?color|farbkarte/.test(norm(query)))continue;
       if(/\.svg(?:$|\?)/i.test(url.href))continue;
       if(/accessor|ricambi|puntali|sleeves|cover|cable|cavo/.test(identity)&&!/accessor|ricambi|puntali|sleeves|cover|cable|cavo/.test(norm(query)))continue;
-      const page=norm(row.title+' '+row.description+' '+source.href+' '+String(row.content||'').slice(0,16000));
-      const exact=tokens.length>0&&tokens.every(t=>identity.includes(t));
-      const pageMatch=tokens.length>0&&tokens.every(t=>page.includes(t));
+      const page=norm(row.title+' '+row.description+' '+source.href);
+      const exact=tokens.length>0&&tokens.every(t=>matches(identity,t));
+      const pageMatch=tokens.length>0&&tokens.every(t=>matches(page,t));
       if(!exact&&!pageMatch)continue;
       out.push({image_url:url.href,source_url:source.href,source_title:String(row.title||source.hostname).slice(0,180),caption:String(f.caption||row.title||query).slice(0,180),exact,score:exact?100:40});
     }
