@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FULL 2.12 CYBERSECURITY</title>
+<title>FULL 2.13 AUTONOMY</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
 <style>
 :root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
@@ -29,7 +29,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 
 <div id="app" class="app hidden">
-<div class="top"><h1>🤖 Assistente Stefano FULL 2.12 CYBERSECURITY</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
+<div class="top"><h1>🤖 Assistente Stefano FULL 2.13 AUTONOMY</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
 <div id="uiStatus" class="small" style="margin:0 0 8px 4px">Interfaccia pronta.</div>
 <div id="autoJobStatus" class="small hidden" style="margin:0 0 8px 4px;padding:8px 10px;background:#111a31;border-radius:9px"></div>
 <div class="grid">
@@ -42,6 +42,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
     <option value="research">Ricerca</option><option value="security">Cybersecurity</option>
   </select>
   <label class="panel"><input id="deep" type="checkbox"><span><b>Deep mode</b><br><span class="small">Planner + reviewer</span></span></label>
+  <label class="panel"><input id="smartAuto" type="checkbox" checked><span><b>Esecuzione intelligente</b><br><span class="small">Sceglie il flusso e controlla i file; prova una correzione se serve</span></span></label>
   <label class="panel"><input id="autonomous" type="checkbox"><span><b>Autonomous mode</b><br><span class="small">Planner + 3 agenti + reviewer • job separati</span></span></label>
   <div class="small">Squadra AI</div>
   <select id="team">
@@ -77,7 +78,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <button id="btnRouter" class="secondary" type="button">🌐 Stato AI Router</button>
   <button id="btnNewChat" class="danger" type="button">Nuova conversazione</button>
   <button id="btnLogout" class="danger" type="button">Esci</button>
-  <div class="panel small">FULL 2.12 CYBERSECURITY: FULL 2.12 CYBERSECURITY: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
+  <div class="panel small">FULL 2.13 AUTONOMY: FULL 2.13 AUTONOMY: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
   <div class="panel small">Sandbox locale: Python/JavaScript/HTML. Email, calendario e trading richiedono connettori separati.</div>
 </aside>
 
@@ -899,12 +900,14 @@ async function runAutonomousJob(text,filesSnapshot,wait){
    await api('autonomous_orchestrate',{run_id:runId});
 
    setAutoJobStatus(`Autonomous #${runId}: Quality Reviewer…`);
-   const fin=await api('autonomous_review',{run_id:runId});
+   let fin=await api('autonomous_review',{run_id:runId});
+   fin=await checkAndRepairDelivery(fin,text);
 
    wait.remove();
    add('assistant',fin.answer,fin.message_id);
    const materializedFiles=await materializeGraphicsStudio(fin.generated_files||[],text);
    materializedFiles.forEach(addDownload);
+   showDeliveryQuality(fin.quality);
    await maybeAutoRenderGraphics(text,materializedFiles);
 
    if(fin.warning){
@@ -927,23 +930,59 @@ async function runAutonomousJob(text,filesSnapshot,wait){
  }
 }
 
+
+function shouldUseAutonomous(text,files,mode){
+ if(/^(?:ricorda(?:ti)? che|crea (?:un )?progetto|(?:mostra|elenca|seleziona|apri) (?:i )?(?:progetti|progetto|attivita))/i.test(text.trim()))return false;
+ if(mode==='graphics'||/\b(volantino|locandina|poster|brochure|logo)\b/i.test(text))return false;
+ const action=/\b(crea|genera|realizza|costruisci|sviluppa|correggi|migliora|analizza|audit|implementa|prepara)\b/i.test(text);
+ return action&&(files.length>0||/\b(progetto|applicazione|programma|api|test|sicurezza|cybersecurity|completo|completa|file|confronto|ricerca approfondita)\b/i.test(text)||text.length>350);
+}
+function showDeliveryQuality(q){
+ if(!q||!q.files_checked)return;
+ const messages=q.issues.map(i=>(i.file?i.file+': ':'')+i.message);
+ add('assistant','Controlli automatici: '+q.files_checked+' file. '+(messages.length?'Da verificare: '+messages.join(' | '):'Nessun problema rilevato nei controlli strutturali.')+'\n'+q.limitations);
+}
+async function checkAndRepairDelivery(result,text){
+ if(!$('smartAuto').checked||!result.quality?.issues?.length)return result;
+ setAutoJobStatus('Controlli: tentativo di correzione dei file.');
+ try{
+  const fixed=await api('delivery_repair',{message:text,answer:result.answer,files:result.generated_files});
+  if(fixed.repaired){
+   const combined={...result,...fixed};
+   // Aggiorna il risultato gia registrato, senza perdere le versioni nel progetto.
+   try{await api('delivery_save_repair',{message_id:result.message_id,answer:combined.answer,files:combined.generated_files,project_id:result.active_project_id||null});}
+   catch(e){combined.warning='File corretti disponibili qui; salvataggio della correzione non riuscito: '+(e?.message||String(e));}
+   return combined;
+  }
+  return {...result,warning:fixed.warning||result.warning};
+ }catch(e){return {...result,warning:'Riparazione non disponibile; file originali conservati: '+(e?.message||String(e))};}
+ finally{setAutoJobStatus('',false);}
+}
+let sending=false;
 async function sendMsg(){
+ if(sending)return;
+ sending=true;$('btnSend').disabled=true;
+ try{await sendMsgCore();}finally{sending=false;$('btnSend').disabled=false;}
+}
+
+async function sendMsgCore(){
  const text=$('input').value.trim();
  if(!text&&!attached.length)return;
 
  const filesSnapshot=[...attached];
  $('input').value='';
  add('user',text||'[Analizza allegati]');
- add('assistant',$('autonomous').checked?'Avvio squadra multi-agente…':'Sto elaborando…');
+ const useAutonomous=$('autonomous').checked||($('smartAuto').checked&&shouldUseAutonomous(text,filesSnapshot,$('mode').value));
+ add('assistant',useAutonomous?'Avvio squadra multi-agente…':'Sto elaborando…');
  const wait=chat.lastChild;
 
- if($('autonomous').checked){
+ if(useAutonomous){
    await runAutonomousJob(text||'[Analizza allegati]',filesSnapshot,wait);
    return;
  }
 
  try{
-   const j=await api('chat',{
+   let j=await api('chat',{
      message:text,
      files:filesSnapshot,
      mode:$('mode').value,
@@ -954,10 +993,13 @@ async function sendMsg(){
      team:$('team').value
    });
 
+   j=await checkAndRepairDelivery(j,text);
    wait.remove();
    add('assistant',j.answer,j.message_id);
    const materializedFiles=await materializeGraphicsStudio(j.generated_files||[],text);
    materializedFiles.forEach(addDownload);
+   showDeliveryQuality(j.quality);
+   if(j.warning)setStatus(j.warning,true);
    await maybeAutoRenderGraphics(text,materializedFiles);
 
    if(j.active_project_id){
@@ -1026,7 +1068,7 @@ async function showRouterStatus(){
    const j=await api('router_status');
    const f=j.freellmapi||{};
    const o=j.openrouter||{};
-   let msg='AI ROUTER FULL 2.12 CYBERSECURITY\n\n';
+   let msg='AI ROUTER FULL 2.13 AUTONOMY\n\n';
    msg+=`FreeLLMAPI: ${f.configured?'configurato':'non configurato'}\n`;
    if(f.configured){
      msg+=`Connessione: ${f.reachable===true?'OK':f.reachable===false?'NON RAGGIUNGIBILE':'non verificata'}\n`;
@@ -1161,7 +1203,7 @@ function bindUI(){
     }
   });
 
-  setStatus('Interfaccia FULL 2.12 CYBERSECURITY pronta.');
+  setStatus('Interfaccia FULL 2.13 AUTONOMY pronta.');
 }
 
 document.addEventListener('DOMContentLoaded', async ()=>{

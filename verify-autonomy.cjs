@@ -1,0 +1,18 @@
+const fs=require('fs'),vm=require('vm'),path=require('path'),assert=require('node:assert/strict');const{stripTypeScriptTypes}=require('node:module');
+const s=fs.readFileSync(path.join(__dirname,'supabase/functions/assistente-stefano/index.ts'),'utf8');const ctx={createClient:()=>({}),Deno:{env:{get:()=>''},serve:()=>{}},console,URL,Response,AbortSignal};vm.createContext(ctx);vm.runInContext(stripTypeScriptTypes(s,{mode:'strip'}).replace(/^import .*;$/m,''),ctx);
+let q=ctx.deliveryQuality('Genera file JSON',[{name:'a.json',content:'{"ok":true}'}]);assert.equal(q.issues.length,0);assert.equal(q.runtime_tests_executed,false);assert.equal(q.checks[0].check,'json_parse');
+assert(ctx.deliveryQuality('Genera file JSON',[{name:'a.json',content:'{"broken":}'}]).issues.some(i=>i.code==='invalid_json'));
+assert(ctx.deliveryQuality('',[{name:'a.py',content:''}]).issues.some(i=>i.code==='empty'));
+assert(ctx.deliveryQuality('',[{name:'a.py',content:'pass'},{name:'a.py',content:'print(1)'}]).issues.some(i=>i.code==='duplicate_name'));
+assert(ctx.deliveryQuality('',[{name:'../a.py',content:'pass'}]).issues.some(i=>i.code==='unsafe_path'));
+assert(ctx.deliveryQuality('Genera Python e CSV',[{name:'main.py',content:'print(1)'}]).issues.some(i=>i.code==='missing_format'));
+assert.equal(ctx.deliveryQuality('Spiegami JSON',[]).issues.length,0);
+assert.equal(ctx.deliveryQuality('Volantino A4 PNG PDF',[{name:'graphics_studio_spec.json',content:'{}'}]).issues.length,0);
+assert.equal(ctx.deliveryQuality('Genera volantino A4 PNG PDF',[{name:'graphics_studio_spec.json',content:'{}'}]).issues.length,0);
+const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');vm.runInContext(html.slice(html.indexOf('function shouldUseAutonomous('),html.indexOf('function showDeliveryQuality(')),ctx);
+assert(ctx.shouldUseAutonomous('Crea programma Python con test',[],'auto'));assert(!ctx.shouldUseAutonomous('Spiegami CSV in una frase',[],'auto'));assert(!ctx.shouldUseAutonomous('Crea volantino PNG PDF',[],'auto'));assert(!ctx.shouldUseAutonomous('Crea un progetto Demo',[],'auto'));assert(!ctx.shouldUseAutonomous('Ricorda che preferisco file CSV',[],'auto'));
+let calls=0;ctx.callModel=async()=>{calls++;return '<<<FILE\nname: a.json\ncontent:\n{"ok":true}\nFILE>>>'};
+(async()=>{let r=await ctx.repairDelivery({message:'Genera file JSON',files:[{name:'a.json',content:'{bad}'}]});assert(r.repaired);assert.equal(r.quality.issues.length,0);assert.equal(calls,1);
+r=await ctx.repairDelivery({message:'Genera file JSON',files:[{name:'a.json',content:'{}'}]});assert(!r.repaired);assert.equal(calls,1);
+ctx.callModel=async()=> '<<<FILE\nname: b.json\ncontent:\n{}\nFILE>>>';r=await ctx.repairDelivery({message:'Genera file JSON',files:[{name:'a.json',content:'{bad}'}]});assert(!r.repaired);assert.equal(r.generated_files[0].name,'a.json');
+assert(html.includes('if(sending)return;'));assert(html.includes('id="smartAuto" type="checkbox" checked'));console.log('PASS: delivery quality, JSON parsing, missing formats, unsafe paths, duplicates, graphics exceptions, automatic routing, bounded repair, preservation and duplicate-send guard');})().catch(e=>{console.error(e);process.exitCode=1});
