@@ -7,6 +7,7 @@ for(const request of ['Audit di sicurezza del codice Python','Analizza una SQL i
 assert.equal(context.autoModeForObjective('Fammi un volantino per un corso cybersecurity'),'graphics');
 assert.equal(context.inferTeamFromObjective('Audit di sicurezza del codice Python'),'security');
 assert.equal(context.teamAgents('security','').length,3);
+assert.equal(context.isGraphicsAutonomousRun({objective:'Audit di sicurezza del codice con report A4',team:'security'}),false);
 assert(context.agentsCatalog().some(t=>t.id==='security'));
 assert(context.modePrompt('security').includes('Non inventare scansioni'));
 assert(context.modePrompt('security').includes('esplicitamente autorizzati'));
@@ -23,3 +24,7 @@ assert.equal(safe.findings.length,0);assert(safe.limitations.includes('non esegu
 assert.equal(context.securityStaticAudit([]).files_reviewed,0);
 const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');assert(html.includes('id="btnSecurityAudit"'));assert(html.includes('value="security"'));
 console.log('PASS: cybersecurity routing/team, audit evidence and line numbers, safe-code controls, secret redaction and existing graphics routing');
+
+assert(!context.requestedExts("Genera query_sicura.py e test_query_sicura.py contro SQL injection").includes("sql"));
+assert(context.requestedExts("Genera migration.sql").includes("sql"));
+assert(context.requestedExts("Crea uno script SQL").includes("sql"));
