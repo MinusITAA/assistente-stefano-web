@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FULL 2.9 GRAPHICS PRO.1 GRAPHICS LITE.1 FILE PARSER FIX</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
+<style>
+:root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,system-ui;background:var(--bg);color:var(--t)}
+.app{max-width:1180px;margin:auto;padding:12px}.top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}
+h1{font-size:22px;margin:0}.badge{font-size:12px;background:#1b2748;padding:7px 10px;border-radius:999px}
+.grid{display:grid;grid-template-columns:285px minmax(0,1fr);gap:12px}.side,.card{background:var(--p);border:1px solid #233052;border-radius:16px;min-width:0}
+.side{padding:12px;height:calc(100vh - 75px);overflow-y:auto;overflow-x:hidden}.side button,.side select{width:100%;margin:5px 0}.side .panel{display:flex;align-items:flex-start;gap:9px;line-height:1.35;white-space:normal}.side .panel input[type=checkbox]{width:auto;min-width:16px;height:16px;margin:2px 0 0 0;padding:0;flex:0 0 auto}.side .small{line-height:1.35;overflow-wrap:anywhere}
+.card{overflow:hidden}.chat{height:58vh;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;padding:11px 13px;border-radius:15px;white-space:pre-wrap;line-height:1.45}.user{align-self:flex-end;background:#2b4eb8}.assistant{align-self:flex-start;background:var(--p2)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.bar{padding:10px 12px;border-top:1px solid #233052;background:#0f1830}
+textarea{width:100%;min-height:68px;max-height:180px;resize:none;background:#111a31;color:white;border:1px solid #2b3a62;border-radius:13px;padding:12px;font:inherit}
+button,select,input{border:0;border-radius:10px;padding:9px 11px;font:inherit}button{font-weight:700;cursor:pointer;position:relative;z-index:1;touch-action:manipulation}button:active{transform:translateY(1px)}.primary{background:var(--a);color:#07112e}.secondary{background:#202c4a;color:white}.good{background:var(--g);color:#d8ffe9}.danger{background:#472232;color:#ffdbe3}
+.small{font-size:12px;color:var(--m)}.hidden{display:none}.download{align-self:flex-start;background:#102c22;border:1px solid #235c46;padding:10px;border-radius:12px}
+a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-decoration:none;padding:8px 11px;border-radius:9px;font-weight:700}
+.panel{margin:8px 0;padding:10px;background:#0f1830;border-radius:10px;display:flex;align-items:flex-start;gap:8px;line-height:1.3}.panel input{margin-top:2px;flex:0 0 auto}.login{max-width:420px;margin:12vh auto;background:var(--p);padding:22px;border-radius:18px}
+@media(max-width:900px){.grid{grid-template-columns:250px minmax(0,1fr)}}@media(max-width:780px){.grid{grid-template-columns:1fr}.side{height:auto;max-height:none}.chat{height:54vh}}
+</style>
+</head>
+<body>
+<div id="login" class="login">
+<h2>🤖 Assistente Stefano FULL</h2><input id="pw" type="password" placeholder="Password">
+<button id="btnLogin" class="primary" type="button">Entra</button><div id="loginErr" class="small"></div>
+</div>
+
+<div id="app" class="app hidden">
+<div class="top"><h1>🤖 Assistente Stefano FULL 2.9 GRAPHICS PRO.1 GRAPHICS LITE.1 FILE PARSER FIX</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
+<div id="uiStatus" class="small" style="margin:0 0 8px 4px">Interfaccia pronta.</div>
+<div id="autoJobStatus" class="small hidden" style="margin:0 0 8px 4px;padding:8px 10px;background:#111a31;border-radius:9px"></div>
+<div class="grid">
+<aside class="side">
+  <div class="small">Modalità</div>
+  <select id="mode">
+    <option value="auto">Auto</option><option value="general">Generale</option>
+    <option value="developer">Developer</option><option value="graphics">Grafica/Volantini</option>
+    <option value="admin">Amministrazione</option><option value="commercial">Commerciale</option>
+    <option value="research">Ricerca</option>
+  </select>
+  <label class="panel"><input id="deep" type="checkbox"><span><b>Deep mode</b><br><span class="small">Planner + reviewer</span></span></label>
+  <label class="panel"><input id="autonomous" type="checkbox"><span><b>Autonomous mode</b><br><span class="small">Planner + 3 agenti + reviewer • job separati</span></span></label>
+  <div class="small">Squadra AI</div>
+  <select id="team">
+    <option value="auto" selected>✨ Auto — scegli la squadra</option>
+    <option value="balanced">Balanced</option>
+    <option value="developer">Developer</option>
+    <option value="research">Research</option>
+    <option value="graphics">Graphics</option>
+    <option value="commercial">Commercial</option>
+    <option value="admin">Admin</option>
+    <option value="trading">Trading Analyst</option>
+  </select>
+  <label class="panel"><input id="saveLib" type="checkbox"><span><b>Salva allegati</b><br><span class="small">Aggiungili alla libreria del progetto</span></span></label>
+
+  <div class="small">Progetto attivo</div>
+  <select id="project"><option value="">Nessun progetto</option></select>
+  <div id="activeProjectLabel" class="small" style="margin:2px 4px 8px">Nessun progetto selezionato</div>
+  <button id="btnNewProject" class="secondary" type="button">+ Nuovo progetto</button>
+  <button id="btnTasks" class="secondary" type="button">☑ Attività</button>
+  <button id="btnNewTask" class="secondary" type="button">+ Nuova attività</button>
+  <button id="btnLibrary" class="secondary" type="button">📚 Libreria</button>
+  <button id="btnMemories" class="secondary" type="button">🧠 Memorie</button>
+  <button id="btnStrategies" class="secondary" type="button">📈 Strategie apprese</button>
+  <button id="btnGraphicsStudio" class="secondary" type="button">🎨 Graphics Studio</button>
+  <button id="btnAgents" class="secondary" type="button">🤖 Squadra AI</button>
+  <button id="btnAutoRuns" class="secondary" type="button">🤖 Esecuzioni autonome</button>
+  <button id="btnSelfAudit" class="secondary" type="button">🧪 Auto-audit</button>
+  <button id="btnImprovements" class="secondary" type="button">🛠 Proposte miglioramento</button>
+  <button id="btnHealth" class="secondary" type="button">🩺 Stato sistema</button>
+  <button id="btnRouter" class="secondary" type="button">🌐 Stato AI Router</button>
+  <button id="btnNewChat" class="danger" type="button">Nuova conversazione</button>
+  <button id="btnLogout" class="danger" type="button">Esci</button>
+  <div class="panel small">FULL 2.9 GRAPHICS PRO.1 GRAPHICS LITE.1 FILE PARSER FIX: FULL 2.9 GRAPHICS PRO.1 GRAPHICS LITE.1 FILE PARSER FIX: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
+  <div class="panel small">Sandbox locale: Python/JavaScript/HTML. Email, calendario e trading richiedono connettori separati.</div>
+</aside>
+
+<main class="card">
+<div id="chat" class="chat"></div>
+<div class="bar row">
+<input id="file" type="file" multiple class="hidden" accept=".txt,.csv,.json,.md,.html,.htm,.xml,.log,.pdf,.py,.js,.ts,.tsx,.jsx,.css,.sql,.ps1,.sh,.bat,.cmd,.yaml,.yml,.toml,.ini,.java,.c,.cpp,.cs,.go,.rs,.php,.rb,image/*">
+<button id="btnAttach" class="secondary" type="button">📎 Allega</button>
+<span id="fileStatus" class="small">Nessun allegato</span>
+<button id="clearFiles" class="secondary hidden" type="button">Rimuovi</button>
+</div>
+<div id="sandboxPanel" class="bar hidden"><b>🧪 Sandbox</b><pre id="sandboxOutput" style="white-space:pre-wrap;background:#090f1f;padding:10px;border-radius:8px;max-height:220px;overflow:auto"></pre><button id="btnCloseSandbox" class="secondary" type="button">Chiudi</button></div>
+<div class="bar">
+<textarea id="input" placeholder="Chiedimi qualsiasi cosa: ricerca, codice, PDF, volantino, progetto, analisi..."></textarea>
+<div class="row" style="margin-top:8px">
+<button id="btnSend" class="primary" type="button">Invia</button>
+<span class="small">Shift+Enter = nuova riga</span>
+</div>
+</div>
+</main>
+</div>
+</div>
+
+<script>
+const endpoint="https://tljicllyygtjhdrrcwcl.supabase.co/functions/v1/assistente-stefano";
+let password=localStorage.getItem('assistente_pw')||'',attached=[],lastAssistantId=null,activeProjectId=localStorage.getItem('assistente_project')||'';
+const $=id=>document.getElementById(id), chat=$('chat');
+
+async function api(action,data={}){
+ let r;
+ try{
+   r=await fetch(endpoint,{
+     method:'POST',
+     headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({action,password,...data})
+   });
+ }catch(e){
+   throw new Error('Connessione al backend fallita: '+(e?.message||String(e)));
+ }
+
+ const raw=await r.text();
+ let j={};
+ try{j=raw?JSON.parse(raw):{}}
+ catch{
+   if(!r.ok)throw new Error(`HTTP ${r.status}: ${raw.slice(0,800)||'risposta non valida'}`);
+   throw new Error('Il backend ha restituito una risposta non JSON.');
+ }
+
+ if(!r.ok){
+   const msg=j.error||j.detail||j.message||raw||`HTTP ${r.status}`;
+   throw new Error(`HTTP ${r.status}: ${msg}`);
+ }
+ return j;
+}
+function add(role,text,id=null){
+ const d=document.createElement('div');d.className='msg '+role;d.textContent=text;chat.appendChild(d);
+ if(role==='assistant'&&id){
+   const row=document.createElement('div');row.className='row';
+   const up=document.createElement('button');up.className='secondary';up.textContent='👍';
+   const dn=document.createElement('button');dn.className='secondary';dn.textContent='👎';
+   up.onclick=()=>feedback(id,1);dn.onclick=()=>feedback(id,-1);
+   row.append(up,dn);d.appendChild(document.createElement('br'));d.appendChild(row);
+ }
+ chat.scrollTop=chat.scrollHeight;
+}
+function pdfEscape(s){return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\x20-\x7E\n\r\t]/g,'?').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)')}
+function wrapPdf(text,max=88){const o=[];for(const raw of String(text).replace(/\r/g,'').split('\n')){if(!raw){o.push('');continue}let l='';for(const w of raw.split(/\s+/)){if(!l)l=w;else if((l+' '+w).length<=max)l+=' '+w;else{o.push(l);l=w}}if(l)o.push(l)}return o}
+function simplePdf(text){
+ const lines=wrapPdf(text),lpp=52,pages=[];for(let i=0;i<lines.length;i+=lpp)pages.push(lines.slice(i,i+lpp));if(!pages.length)pages.push(['']);
+ const objs=[];const add=x=>(objs.push(x),objs.length);const font=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'),contents=[],pageNums=[];
+ for(let i=0;i<pages.length;i++){contents.push(add(''));pageNums.push(add(''))}
+ const pagesObj=add(''),catalog=add(`<< /Type /Catalog /Pages ${pagesObj} 0 R >>`);
+ pages.forEach((pg,i)=>{let s='BT\n/F1 11 Tf\n50 800 Td\n';pg.forEach((ln,j)=>{s+=(j?'0 -14 Td\n':'')+`(${pdfEscape(ln)}) Tj\n`});s+='ET';objs[contents[i]-1]=`<< /Length ${s.length} >>\nstream\n${s}\nendstream`;objs[pageNums[i]-1]=`<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${font} 0 R >> >> /Contents ${contents[i]} 0 R >>`});
+ objs[pagesObj-1]=`<< /Type /Pages /Kids [${pageNums.map(n=>`${n} 0 R`).join(' ')}] /Count ${pageNums.length} >>`;
+ let pdf='%PDF-1.4\n',offs=[0];for(let i=0;i<objs.length;i++){offs.push(pdf.length);pdf+=`${i+1} 0 obj\n${objs[i]}\nendobj\n`}const x=pdf.length;pdf+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;for(let i=1;i<offs.length;i++)pdf+=String(offs[i]).padStart(10,'0')+' 00000 n \n';pdf+=`trailer\n<< /Size ${objs.length+1} /Root ${catalog} 0 R >>\nstartxref\n${x}\n%%EOF`;return new Blob([pdf],{type:'application/pdf'})
+}
+let generatedCache=[];
+
+
+const GRAPHICS_STUDIO_PROFILE={
+  navy:"#082B5C",blue:"#0B72CE",light:"#EAF4FF",ink:"#18243A",muted:"#68758A",white:"#FFFFFF"
+};
+
+function escHtml(v){
+ return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function graphicsStudioVisual(mode){
+ const commonStart=`<div class="gs-visual-art">`;
+ const commonEnd=`</div>`;
+
+ if(mode==="mask"){
+   return `${commonStart}
+   <div class="gs-mask-shape">
+     <div class="gs-mask-body">
+       <div class="gs-mask-fold f1"></div><div class="gs-mask-fold f2"></div><div class="gs-mask-fold f3"></div>
+     </div>
+     <div class="gs-mask-loop left"></div><div class="gs-mask-loop right"></div>
+   </div>${commonEnd}`;
+ }
+
+ if(mode==="scanner"){
+   return `${commonStart}
+   <div class="gs-scanner">
+     <div class="gs-scanner-head"></div>
+     <div class="gs-scanner-neck"></div>
+     <div class="gs-scanner-base"></div>
+     <div class="gs-scan-beam"></div>
+   </div>${commonEnd}`;
+ }
+
+ if(mode==="bottle"){
+   return `${commonStart}
+   <div class="gs-bottle">
+     <div class="gs-cap"></div>
+     <div class="gs-bottle-body"><div class="gs-bottle-label">MACRODENTAL</div></div>
+   </div>${commonEnd}`;
+ }
+
+ if(mode==="syringe"){
+   return `${commonStart}
+   <div class="gs-syringe">
+     <div class="gs-syringe-plunger"></div>
+     <div class="gs-syringe-body"></div>
+     <div class="gs-syringe-tip"></div>
+   </div>${commonEnd}`;
+ }
+
+ if(mode==="dental_material"){
+   return `${commonStart}
+   <div class="gs-material">
+     <div class="gs-jar"></div>
+     <div class="gs-cartridge"></div>
+   </div>${commonEnd}`;
+ }
+
+ return `${commonStart}
+   <div class="gs-orbit gs-orbit-a"></div><div class="gs-orbit gs-orbit-b"></div>
+   <div class="gs-tooth"><svg viewBox="0 0 120 140" aria-hidden="true"><path d="M36 10C18 16 10 32 12 51c2 17 11 25 15 39 5 18 4 40 16 40 10 0 10-25 17-25s7 25 17 25c12 0 11-22 16-40 4-14 13-22 15-39 2-19-6-35-24-41-9-3-16 4-24 4s-15-7-24-4z" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/></svg></div>
+   <div class="gs-spark gs-s1"></div><div class="gs-spark gs-s2"></div><div class="gs-spark gs-s3"></div>
+ ${commonEnd}`;
+}
+
+function graphicsStudioRenderHTML(spec){
+ const s=spec||{};
+ const features=Array.isArray(s.features)?s.features.filter(Boolean).slice(0,4):[];
+ const template=s.template||"hero_product";
+ const featureHtml=features.map((f,i)=>`
+   <div class="gs-feature"><div class="gs-feature-num">${String(i+1).padStart(2,'0')}</div><div>${escHtml(f)}</div></div>`).join("");
+ const priceBlock=s.price?`
+   <div class="gs-price-wrap">
+     ${s.promo_badge?`<div class="gs-badge">${escHtml(s.promo_badge)}</div>`:""}
+     <div class="gs-price">${escHtml(s.price)}</div>
+     ${s.price_note?`<div class="gs-price-note">${escHtml(s.price_note)}</div>`:""}
+   </div>`:"";
+ const title=escHtml(s.title||"OFFERTA MACRODENTAL");
+ const subtitle=escHtml(s.subtitle||"");
+ const product=escHtml(s.product_name||"");
+ const eyebrow=escHtml(s.eyebrow||"");
+ const cta=escHtml(s.cta||"Contatta il tuo referente Macrodental");
+ const footer=escHtml(s.footer||"");
+ const visual=graphicsStudioVisual(s.visual_mode||'abstract_dental');
+
+ return `<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
+<style>
+@page{size:A4;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
+body{font-family:Inter,Arial,Helvetica,sans-serif;color:#18243A}
+.page{width:210mm;height:297mm;overflow:hidden;position:relative;background:radial-gradient(circle at 92% 10%,rgba(11,114,206,.11),transparent 30%),linear-gradient(180deg,#fff 0%,#fff 78%,#f7fbff 100%)}
+.page:before{content:"";position:absolute;left:0;top:0;width:100%;height:4mm;background:linear-gradient(90deg,#082B5C,#0B72CE)}
+.gs-shell{height:100%;padding:17mm 15mm 13mm;display:flex;flex-direction:column;position:relative;z-index:2}
+.gs-brand{display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:6mm;border-bottom:1px solid #dbe6f2}
+.gs-logo{font-weight:900;letter-spacing:-1px;font-size:28pt;color:#082B5C;line-height:.9}.gs-logo span{color:#0B72CE}
+.gs-brand-sub{font-size:8.5pt;letter-spacing:2px;color:#68758A;text-transform:uppercase}
+.gs-top{display:grid;grid-template-columns:1.08fr .92fr;gap:9mm;align-items:center;min-height:124mm;padding:9mm 0 6mm}
+.gs-eyebrow{font-size:9pt;text-transform:uppercase;letter-spacing:2.2px;font-weight:800;color:#0B72CE;margin-bottom:4mm}
+.gs-title{font-size:37pt;line-height:.97;letter-spacing:-1.2px;font-weight:900;color:#082B5C;margin:0 0 5mm}
+.gs-subtitle{font-size:13.5pt;line-height:1.38;color:#516079;max-width:105mm;margin-bottom:6mm}
+.gs-product{font-size:15pt;font-weight:800;color:#18243A;margin-bottom:5mm}
+.gs-price-wrap{display:inline-flex;flex-direction:column;align-items:flex-start;background:#0B72CE;color:#fff;border-radius:7mm;padding:5mm 8mm;min-width:58mm;box-shadow:0 6mm 14mm rgba(11,114,206,.20)}
+.gs-badge{font-size:8pt;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;background:#fff;color:#082B5C;padding:1.5mm 3mm;border-radius:999px;margin-bottom:2.5mm}
+.gs-price{font-size:48pt;line-height:.88;font-weight:950;letter-spacing:-1.5px}.gs-price-note{font-size:9pt;margin-top:2mm;opacity:.95}
+.gs-visual{height:105mm;border-radius:10mm;background:linear-gradient(145deg,#edf6ff,#dfefff);position:relative;overflow:hidden;box-shadow:inset 0 0 0 1px #d5e7f8}
+.gs-visual:after{content:"";position:absolute;width:65mm;height:65mm;border-radius:50%;background:rgba(255,255,255,.58);right:-12mm;top:-14mm}
+
+.gs-visual-art{position:absolute;inset:0;color:#0B72CE}
+.gs-mask-shape{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.gs-mask-body{width:72%;height:42%;border-radius:12mm;background:linear-gradient(180deg,#6BC0F4,#2B8FD4);position:relative;box-shadow:0 10mm 20mm rgba(8,43,92,.18)}
+.gs-mask-body:before,.gs-mask-body:after{content:"";position:absolute;top:10%;bottom:10%;width:5mm;background:#d7efff;border-radius:4mm}
+.gs-mask-body:before{left:7%}.gs-mask-body:after{right:7%}
+.gs-mask-fold{position:absolute;left:18%;right:18%;height:2px;background:rgba(255,255,255,.7)}
+.gs-mask-fold.f1{top:28%}.gs-mask-fold.f2{top:50%}.gs-mask-fold.f3{top:72%}
+.gs-mask-loop{position:absolute;width:34mm;height:48mm;border:3px solid #86c9ef;border-radius:50%;top:26%}
+.gs-mask-loop.left{left:3mm}.gs-mask-loop.right{right:3mm}
+.gs-scanner{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:56mm;height:88mm}
+.gs-scanner-head{position:absolute;top:0;left:8mm;width:40mm;height:22mm;border-radius:10mm;background:linear-gradient(145deg,#fff,#dbe8f5);box-shadow:0 5mm 12mm rgba(8,43,92,.18);border:1px solid #c7d8e9}
+.gs-scanner-neck{position:absolute;top:17mm;left:22mm;width:14mm;height:48mm;border-radius:8mm;background:linear-gradient(180deg,#eaf2f8,#b8ccdf)}
+.gs-scanner-base{position:absolute;bottom:0;left:12mm;width:34mm;height:24mm;border-radius:7mm;background:#0B72CE}
+.gs-scan-beam{position:absolute;bottom:-5mm;left:4mm;width:50mm;height:2px;background:linear-gradient(90deg,transparent,#29a4ff,transparent);box-shadow:0 0 8mm #29a4ff}
+.gs-bottle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:48mm;height:82mm}
+.gs-cap{width:26mm;height:13mm;margin:auto;background:#082B5C;border-radius:3mm 3mm 1mm 1mm}
+.gs-bottle-body{width:48mm;height:65mm;background:linear-gradient(180deg,#ffffff,#dfeaf4);border:1px solid #bfd0e2;border-radius:8mm;box-shadow:0 8mm 15mm rgba(8,43,92,.15);display:flex;align-items:center;justify-content:center}
+.gs-bottle-label{font-size:7pt;font-weight:800;color:#0B72CE;transform:rotate(-90deg)}
+.gs-syringe{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-12deg);width:84mm;height:24mm}
+.gs-syringe-plunger{position:absolute;left:0;top:7mm;width:18mm;height:10mm;background:#082B5C;border-radius:2mm}
+.gs-syringe-body{position:absolute;left:16mm;top:3mm;width:50mm;height:18mm;border:2px solid #0B72CE;border-radius:4mm;background:linear-gradient(90deg,#fff,#eaf4ff)}
+.gs-syringe-tip{position:absolute;right:0;top:10mm;width:22mm;height:3px;background:#0B72CE}
+.gs-material{position:absolute;inset:0}
+.gs-jar{position:absolute;left:18mm;bottom:22mm;width:48mm;height:45mm;border-radius:8mm 8mm 12mm 12mm;background:linear-gradient(180deg,#fefefe,#dfeaf5);border:1px solid #b7cade;box-shadow:0 8mm 15mm rgba(8,43,92,.15)}
+.gs-jar:before{content:"";position:absolute;left:-1px;right:-1px;top:-10mm;height:12mm;border-radius:5mm;background:#082B5C}
+.gs-cartridge{position:absolute;right:16mm;top:26mm;width:18mm;height:68mm;border-radius:7mm;background:linear-gradient(180deg,#0B72CE,#8fd0ff);transform:rotate(18deg);box-shadow:0 7mm 12mm rgba(8,43,92,.14)}
+.gs-tooth{position:absolute;width:38mm;height:46mm;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3}.gs-tooth svg{width:100%;height:100%}
+.gs-orbit{position:absolute;border:2px solid rgba(11,114,206,.22);border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-12deg)}.gs-orbit-a{width:76mm;height:76mm}.gs-orbit-b{width:98mm;height:48mm;transform:translate(-50%,-50%) rotate(22deg)}
+.gs-spark{position:absolute;width:5mm;height:5mm;border-radius:50%;background:#0B72CE}.gs-s1{left:20%;top:24%}.gs-s2{right:18%;bottom:20%;width:3mm;height:3mm}.gs-s3{right:20%;top:20%;width:2mm;height:2mm}
+.gs-features{display:grid;grid-template-columns:repeat(2,1fr);gap:4mm 6mm;margin-top:2mm}
+.gs-feature{min-height:23mm;border-radius:5mm;background:#f4f9ff;padding:4.5mm 5mm;display:grid;grid-template-columns:11mm 1fr;gap:3mm;align-items:center;font-size:10.5pt;line-height:1.3;font-weight:650;border:1px solid #e3eef8}
+.gs-feature-num{width:10mm;height:10mm;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#082B5C;color:#fff;font-size:7.5pt;font-weight:900}
+.gs-bottom{margin-top:auto}.gs-cta{margin-top:6mm;background:#082B5C;color:#fff;border-radius:6mm;padding:5.5mm 7mm;display:flex;align-items:center;justify-content:space-between;gap:5mm}
+.gs-cta strong{font-size:15pt;letter-spacing:.1px}.gs-cta-arrow{width:12mm;height:12mm;border-radius:50%;background:#0B72CE;display:flex;align-items:center;justify-content:center;font-size:18pt}
+.gs-footer{font-size:8pt;color:#68758A;padding-top:3mm;text-align:center;min-height:7mm}
+.gs-split_offer .gs-top{grid-template-columns:.9fr 1.1fr}.gs-split_offer .gs-left{order:2}.gs-split_offer .gs-visual{order:1;height:118mm}.gs-split_offer .gs-title{font-size:34pt}
+.gs-catalog_clean .gs-top{grid-template-columns:1fr;min-height:auto;padding-bottom:5mm}.gs-catalog_clean .gs-visual{height:62mm}.gs-catalog_clean .gs-left{display:grid;grid-template-columns:1fr auto;gap:8mm;align-items:end}.gs-catalog_clean .gs-title{font-size:31pt}.gs-catalog_clean .gs-subtitle{margin-bottom:0}
+.gs-course_master .gs-title{font-size:34pt}.gs-course_master .gs-price-wrap{background:#082B5C}.gs-course_master .gs-visual{background:linear-gradient(145deg,#f7f9fc,#e7eff8)}
+@media print{html,body{width:210mm;height:297mm}.page{page-break-after:always}}
+</style></head><body>
+<div class="page gs-${template}"><div class="gs-shell">
+<div class="gs-brand"><div><div class="gs-logo">MACRO<span>DENTAL</span></div><div class="gs-brand-sub">Soluzioni odontoiatriche professionali</div></div><div class="gs-brand-sub">${escHtml(s.tone||"commercial")}</div></div>
+<section class="gs-top"><div class="gs-left">${eyebrow?`<div class="gs-eyebrow">${eyebrow}</div>`:""}<h1 class="gs-title">${title}</h1>${subtitle?`<div class="gs-subtitle">${subtitle}</div>`:""}${product?`<div class="gs-product">${product}</div>`:""}${priceBlock}</div><div class="gs-visual">${visual}</div></section>
+${featureHtml?`<section class="gs-features">${featureHtml}</section>`:""}
+<div class="gs-bottom"><div class="gs-cta"><strong>${cta}</strong><div class="gs-cta-arrow">→</div></div><div class="gs-footer">${footer}</div></div>
+</div></div></body></html>`;
+}
+
+function isGraphicsStudioSpecFile(f){
+ return String(f?.name||"").toLowerCase()==="graphics_studio_spec.json";
+}
+function parseGraphicsStudioSpecFile(f){
+ try{const obj=JSON.parse(String(f?.content||"{}"));return obj?.engine==="graphics_studio"?obj:null;}catch{return null;}
+}
+async function materializeGraphicsStudio(files,userText){
+ const specFile=(files||[]).find(isGraphicsStudioSpecFile);
+ if(!specFile)return files||[];
+ const spec=parseGraphicsStudioSpecFile(specFile);
+ if(!spec)return files||[];
+ const html=graphicsStudioRenderHTML(spec);
+ const base=(spec.product_name||spec.title||"volantino_macrodental").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,70)||"volantino_macrodental";
+ return [{name:`${base}.html`,content:html},...(files||[]).filter(f=>!isGraphicsStudioSpecFile(f))];
+}
+
+function loadExternalScript(src,globalCheck){
+ return new Promise((resolve,reject)=>{
+   if(globalCheck && globalCheck()){resolve();return;}
+   const existing=[...document.scripts].find(s=>s.src===src);
+   if(existing){
+     const wait=()=>globalCheck&&globalCheck()?resolve():setTimeout(wait,100);
+     wait();return;
+   }
+   const s=document.createElement('script');
+   s.src=src;
+   s.onload=()=>resolve();
+   s.onerror=()=>reject(new Error('Impossibile caricare '+src));
+   document.head.appendChild(s);
+ });
+}
+
+async function ensureGraphicsRenderer(needPdf=false){
+ await loadExternalScript(
+   'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
+   ()=>Boolean(window.html2canvas)
+ );
+ if(needPdf){
+   await loadExternalScript(
+     'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js',
+     ()=>Boolean(window.jspdf?.jsPDF)
+   );
+ }
+}
+
+function canvasToBlob(canvas,type='image/png',quality=0.94){
+ return new Promise((resolve,reject)=>{
+   canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Conversione immagine fallita')),type,quality);
+ });
+}
+
+function addBlobDownload(name,blob){
+ const d=document.createElement('div');
+ d.className='download';
+ const title=document.createElement('b');
+ title.textContent='🖼️ '+name;
+ d.appendChild(title);
+
+ const row=document.createElement('div');
+ row.className='row';
+ row.style.marginTop='7px';
+
+ const a=document.createElement('a');
+ a.className='dl';
+ a.textContent='Scarica';
+ a.href=URL.createObjectURL(blob);
+ a.download=name;
+ row.appendChild(a);
+
+ d.appendChild(row);
+ chat.appendChild(d);
+ return a.href;
+}
+
+async function waitForIframeAssets(doc){
+ try{if(doc.fonts?.ready)await Promise.race([doc.fonts.ready,new Promise(r=>setTimeout(r,2500))]);}catch{}
+ const imgs=[...doc.images];
+ await Promise.all(imgs.map(img=>new Promise(resolve=>{
+   if(img.complete){resolve();return;}
+   const done=()=>resolve();
+   img.addEventListener('load',done,{once:true});
+   img.addEventListener('error',done,{once:true});
+   setTimeout(done,3000);
+ })));
+}
+
+function baseNameNoExt(name){
+ return String(name||'grafica.html').replace(/\.[^.]+$/,'');
+}
+
+async function renderHtmlPagesToCanvases(file){
+ await ensureGraphicsRenderer(false);
+
+ const iframe=document.createElement('iframe');
+ iframe.style.position='fixed';
+ iframe.style.left='-12000px';
+ iframe.style.top='0';
+ iframe.style.width='1200px';
+ iframe.style.height='1600px';
+ iframe.style.border='0';
+ iframe.style.background='#fff';
+ iframe.setAttribute('aria-hidden','true');
+ document.body.appendChild(iframe);
+
+ try{
+   await new Promise((resolve,reject)=>{
+     iframe.onload=()=>resolve();
+     iframe.onerror=()=>reject(new Error('Impossibile caricare il layout HTML'));
+     iframe.srcdoc=String(file.content||'');
+   });
+
+   const doc=iframe.contentDocument;
+   if(!doc)throw new Error('Documento HTML non disponibile');
+   await waitForIframeAssets(doc);
+   await new Promise(r=>setTimeout(r,350));
+
+   let targets=[...doc.querySelectorAll('.page')];
+   if(!targets.length)targets=[doc.body];
+
+   const canvases=[];
+   for(const target of targets){
+     const rect=target.getBoundingClientRect();
+     const width=Math.max(1,Math.ceil(rect.width || target.scrollWidth || 794));
+     const height=Math.max(1,Math.ceil(rect.height || target.scrollHeight || 1123));
+
+     const canvas=await window.html2canvas(target,{
+       scale:2,
+       useCORS:true,
+       allowTaint:false,
+       backgroundColor:'#ffffff',
+       logging:false,
+       width,
+       height,
+       windowWidth:Math.max(doc.documentElement.scrollWidth,width),
+       windowHeight:Math.max(doc.documentElement.scrollHeight,height),
+       scrollX:0,
+       scrollY:0
+     });
+     canvases.push(canvas);
+   }
+   return canvases;
+ } finally {
+   iframe.remove();
+ }
+}
+
+async function renderHtmlArtifact(file,formats=['png'],showStatus=true){
+ const wanted=[...new Set(formats.map(x=>x==='jpeg'?'jpg':x).filter(x=>['png','jpg','pdf'].includes(x)))];
+ if(!wanted.length)return;
+
+ if(showStatus)setStatus('Render grafico in corso: '+wanted.join(', ').toUpperCase()+'…');
+
+ try{
+   await ensureGraphicsRenderer(wanted.includes('pdf'));
+   const canvases=await renderHtmlPagesToCanvases(file);
+   const base=baseNameNoExt(file.name);
+
+   if(wanted.includes('png')){
+     for(let i=0;i<canvases.length;i++){
+       const suffix=canvases.length>1?`_pagina_${i+1}`:'';
+       const blob=await canvasToBlob(canvases[i],'image/png',1);
+       addBlobDownload(`${base}${suffix}.png`,blob);
+     }
+   }
+
+   if(wanted.includes('jpg')){
+     for(let i=0;i<canvases.length;i++){
+       const suffix=canvases.length>1?`_pagina_${i+1}`:'';
+       const blob=await canvasToBlob(canvases[i],'image/jpeg',0.94);
+       addBlobDownload(`${base}${suffix}.jpg`,blob);
+     }
+   }
+
+   if(wanted.includes('pdf')){
+     const {jsPDF}=window.jspdf;
+     const first=canvases[0];
+     const landscape=first.width>first.height;
+     const pdf=new jsPDF({
+       orientation:landscape?'landscape':'portrait',
+       unit:'mm',
+       format:'a4',
+       compress:true
+     });
+
+     for(let i=0;i<canvases.length;i++){
+       if(i>0)pdf.addPage('a4',canvases[i].width>canvases[i].height?'landscape':'portrait');
+
+       const c=canvases[i];
+       const pageW=pdf.internal.pageSize.getWidth();
+       const pageH=pdf.internal.pageSize.getHeight();
+       const ratio=Math.min(pageW/c.width,pageH/c.height);
+       const w=c.width*ratio;
+       const h=c.height*ratio;
+       const x=(pageW-w)/2;
+       const y=(pageH-h)/2;
+
+       pdf.addImage(c.toDataURL('image/jpeg',0.94),'JPEG',x,y,w,h,undefined,'FAST');
+     }
+     addBlobDownload(`${base}.pdf`,pdf.output('blob'));
+   }
+
+   if(showStatus)setStatus('Render completato: '+wanted.join(', ').toUpperCase());
+ }catch(e){
+   if(showStatus)setStatus('Errore render: '+(e?.message||String(e)),true);
+   throw e;
+ }
+}
+
+function requestedGraphicsFormats(text){
+ const t=String(text||'').toLowerCase();
+ const out=[];
+ if(/\bpng\b/.test(t))out.push('png');
+ if(/\b(jpg|jpeg)\b/.test(t))out.push('jpg');
+ if(/\bpdf\b/.test(t))out.push('pdf');
+ if(!out.length && /\b(immagine|image)\b/.test(t) && /\b(volantino|locandina|poster|brochure|grafica|flyer)\b/.test(t))out.push('png');
+ return out;
+}
+
+async function maybeAutoRenderGraphics(userText,files){
+ const formats=requestedGraphicsFormats(userText);
+ if(!formats.length)return;
+
+ const htmlFile=(files||[]).find(f=>String(f?.name||'').toLowerCase().endsWith('.html'));
+ if(!htmlFile){
+   setStatus('Render richiesto ma manca il file HTML sorgente.',true);
+   return;
+ }
+ await renderHtmlArtifact(htmlFile,formats,true);
+}
+
+function addDownload(f){
+ generatedCache.push(f);
+ const d=document.createElement('div');d.className='download';
+ const title=document.createElement('b');title.textContent='📄 '+f.name;d.appendChild(title);
+ const row=document.createElement('div');row.className='row';row.style.marginTop='7px';
+
+ const a=document.createElement('a');a.className='dl';a.textContent='Scarica';
+ const ext=(f.name.split('.').pop()||'txt').toLowerCase();
+ const mime={csv:'text/csv',json:'application/json',html:'text/html',css:'text/css',js:'text/javascript',ts:'text/plain',py:'text/x-python',sql:'text/plain',md:'text/markdown',txt:'text/plain'};
+ const blob=ext==='pdf'?simplePdf(f.content||''):new Blob([f.content||''],{type:(mime[ext]||'text/plain')+';charset=utf-8'});
+ a.href=URL.createObjectURL(blob);a.download=f.name;row.appendChild(a);
+
+ if(['py','js','html'].includes(ext)){
+   const run=document.createElement('button');run.className='secondary';run.type='button';run.textContent=ext==='html'?'Anteprima':'Esegui';
+   run.addEventListener('click',()=>runGeneratedFile(f));
+   row.appendChild(run);
+
+   if(ext==='html'){
+     for(const fmt of ['PNG','JPG','PDF']){
+       const b=document.createElement('button');
+       b.className='secondary';
+       b.type='button';
+       b.textContent=fmt;
+       b.title='Renderizza questo layout in '+fmt;
+       b.addEventListener('click',async()=>{
+         try{await renderHtmlArtifact(f,[fmt.toLowerCase()]);}
+         catch(e){alert('Errore render '+fmt+': '+(e?.message||String(e)));}
+       });
+       row.appendChild(b);
+     }
+   }
+ }
+ d.appendChild(row);chat.appendChild(d);
+}
+
+function showSandbox(text){
+ $('sandboxPanel').classList.remove('hidden');
+ $('sandboxOutput').textContent=String(text);
+ $('sandboxPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function runGeneratedFile(f){
+ const ext=(f.name.split('.').pop()||'').toLowerCase();
+ if(ext==='html'){
+   const blob=new Blob([f.content||''],{type:'text/html'});
+   window.open(URL.createObjectURL(blob),'_blank','noopener');
+   return;
+ }
+ if(ext==='js'){
+   const code=String(f.content||'');
+   const src=`<script>
+   const logs=[];
+   const old={log:console.log,error:console.error,warn:console.warn};
+   ['log','error','warn'].forEach(k=>console[k]=(...a)=>{logs.push(a.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' '));old[k](...a)});
+   window.onerror=(m,s,l,c,e)=>parent.postMessage({kind:'sandbox',text:'ERRORE: '+m},'*');
+   try{${code}\n;parent.postMessage({kind:'sandbox',text:logs.join('\\n')||'Esecuzione completata senza output console.'},'*')}
+   catch(e){parent.postMessage({kind:'sandbox',text:'ERRORE: '+e.message},'*')}
+   <\/script>`;
+   const iframe=document.createElement('iframe');
+   iframe.sandbox='allow-scripts';iframe.style.display='none';iframe.srcdoc=src;document.body.appendChild(iframe);
+   setTimeout(()=>iframe.remove(),5000);return;
+ }
+ if(ext==='py'){
+   showSandbox('Caricamento sandbox Python...');
+   try{
+     if(!window.loadPyodide){
+       const s=document.createElement('script');
+       s.src='https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js';
+       document.head.appendChild(s);
+       await new Promise((res,rej)=>{
+         s.onload=res;
+         s.onerror=()=>rej(new Error('Impossibile caricare Pyodide'));
+       });
+     }
+
+     if(!window._pyodide){
+       window._pyodide=await window.loadPyodide();
+     }
+
+     const py=window._pyodide;
+     const workdir='/home/pyodide';
+     try{py.FS.mkdirTree(workdir)}catch{}
+     py.FS.chdir(workdir);
+
+     // Copia TUTTI i file generati nella stessa risposta dentro la sandbox.
+     for(const gf of generatedCache){
+       if(!gf || !gf.name || gf===f) continue;
+       try{
+         const safeName=String(gf.name).split('/').pop().split('\\').pop();
+         const bytes=new TextEncoder().encode(String(gf.content??''));
+         try{py.FS.unlink(workdir+'/'+safeName)}catch{}
+         py.FS.writeFile(workdir+'/'+safeName,bytes);
+       }catch(err){
+         console.warn('File non copiato nella sandbox:',gf?.name,err);
+       }
+     }
+
+     const code=String(f.content||'');
+     py.globals.set("__assistant_code__", code);
+
+     const result=await py.runPythonAsync(`
+import io, os, traceback, contextlib
+
+os.chdir("/home/pyodide")
+_stdout = io.StringIO()
+_stderr = io.StringIO()
+_ok = True
+
+with contextlib.redirect_stdout(_stdout), contextlib.redirect_stderr(_stderr):
+    try:
+        exec(compile(__assistant_code__, "${String(f.name).replace(/"/g,'')}", "exec"), {"__name__":"__main__"})
+    except BaseException:
+        _ok = False
+        traceback.print_exc()
+
+(_ok, _stdout.getvalue(), _stderr.getvalue())
+     `);
+
+     const jsResult=result.toJs ? result.toJs() : result;
+     if(result && result.destroy) result.destroy();
+
+     const ok=Boolean(jsResult[0]);
+     const stdout=String(jsResult[1]||'');
+     const stderr=String(jsResult[2]||'');
+     let output=(stdout + (stderr ? (stdout ? '\n' : '') + stderr : '')).trim();
+
+     if(!output){
+       output=ok
+         ? 'Esecuzione Python completata senza output.'
+         : 'Il programma Python ha restituito un errore senza messaggio.';
+     }
+
+     // Individua eventuali nuovi file creati dal programma.
+     const beforeNames=new Set(generatedCache.map(x=>String(x.name||'')));
+     let created=[];
+     try{
+       for(const name of py.FS.readdir(workdir)){
+         if(name==='.' || name==='..') continue;
+         if(beforeNames.has(name) || name===String(f.name)) continue;
+         const stat=py.FS.stat(workdir+'/'+name);
+         if(py.FS.isDir(stat.mode)) continue;
+
+         let content='';
+         try{
+           const raw=py.FS.readFile(workdir+'/'+name,{encoding:'utf8'});
+           content=String(raw);
+         }catch{
+           continue;
+         }
+
+         // Evita duplicati nell'interfaccia.
+         if(!generatedCache.some(x=>x.name===name)){
+           const gf={name,content};
+           generatedCache.push(gf);
+           created.push(gf);
+         }
+       }
+     }catch(err){
+       console.warn('Impossibile leggere i file creati dalla sandbox',err);
+     }
+
+     if(created.length){
+       output += '\n\nFile creati nella sandbox: ' + created.map(x=>x.name).join(', ');
+       for(const gf of created) addDownload(gf);
+     }
+
+     showSandbox((ok?'OK\n\n':'ERRORE PYTHON\n\n') + output);
+
+   }catch(e){
+     const msg=(e && (e.stack||e.message)) ? (e.stack||e.message) : String(e);
+     showSandbox('ERRORE SANDBOX\n\n'+msg);
+   }
+ }
+}
+window.addEventListener('message',e=>{if(e.data?.kind==='sandbox')showSandbox(e.data.text)});
+async function login(){
+ password=$('pw').value;
+ try{await api('history');localStorage.setItem('assistente_pw',password);$('login').classList.add('hidden');$('app').classList.remove('hidden');await Promise.all([load(),loadProjects()])}
+ catch(e){$('loginErr').textContent='Password errata o server non raggiungibile.'}
+}
+async function load(){
+ const j=await api('history');chat.innerHTML='';j.messages.forEach(x=>add(x.role,x.content,x.role==='assistant'?x.id:null));
+ if(!j.messages.length)add('assistant','Ciao Stefano. FULL 2.0 Autonomous pronta: progetto, libreria e chat ora restano sincronizzati.');
+}
+async function loadProjects(preferredId=null){
+ const j=await api('projects'),s=$('project');
+ const wanted=String(preferredId??activeProjectId??s.value??'');
+ s.innerHTML='<option value="">Nessun progetto</option>';
+ j.projects.forEach(p=>{const o=document.createElement('option');o.value=String(p.id);o.textContent=p.name;s.appendChild(o)});
+ if(wanted&&[...s.options].some(o=>o.value===wanted)){s.value=wanted;activeProjectId=wanted;localStorage.setItem('assistente_project',wanted)}
+ else if(!wanted){s.value=''}
+ updateActiveProjectLabel();
+}
+function updateActiveProjectLabel(){
+ const s=$('project'),label=$('activeProjectLabel');if(!label)return;label.textContent=s.value?`Attivo: ${s.options[s.selectedIndex]?.text||''}`:'Nessun progetto selezionato';
+}
+$('project').addEventListener('change',()=>{activeProjectId=$('project').value||'';if(activeProjectId)localStorage.setItem('assistente_project',activeProjectId);else localStorage.removeItem('assistente_project');updateActiveProjectLabel()});
+async function newProject(){
+ const name=prompt('Nome progetto:');if(!name)return;const desc=prompt('Descrizione (opzionale):')||'';
+ const j=await api('project_create',{name,description:desc});activeProjectId=String(j.project.id);localStorage.setItem('assistente_project',activeProjectId);await loadProjects(activeProjectId)
+}
+async function newTask(){
+ const title=prompt('Attività:');if(!title)return;
+ await api('task_create',{title,project_id:activeProjectId||$('project').value||null});alert('Attività creata.')
+}
+async function showTasks(){
+ const j=await api('tasks',{project_id:activeProjectId||$('project').value||null});
+ alert(j.tasks.length?j.tasks.map(t=>`${t.status==='done'?'✓':'○'} ${t.title}`).join('\n'):'Nessuna attività.')
+}
+async function showLibrary(){
+ const j=await api('library_list',{project_id:activeProjectId||$('project').value||null});
+ alert(j.documents.length?j.documents.map(d=>'• '+d.name).join('\n'):'Libreria vuota.')
+}
+async function showMemories(){const j=await api('memories');alert(j.memories.length?j.memories.map(m=>'• '+m.content).join('\n\n'):'Nessuna memoria.')}
+async function showStrategies(){const j=await api('strategies');alert(j.strategies.length?j.strategies.map(s=>`• [${s.category}] ${s.content}`).join('\n\n'):'Nessuna strategia appresa.')}
+async function feedback(id,rating){const note=prompt(rating>0?'Cosa ti è piaciuto? (opzionale)':'Cosa deve migliorare?')||'';await api('feedback',{message_id:id,rating,note});alert('Feedback salvato.')}
+async function extractPdf(file){
+ const pdfjs=await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs");
+ pdfjs.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs";
+ const pdf=await pdfjs.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;let out='';
+ for(let p=1;p<=Math.min(pdf.numPages,80);p++){const pg=await pdf.getPage(p),c=await pg.getTextContent();out+=`\n--- PAGINA ${p} ---\n`+c.items.map(i=>i.str).join(' ');if(out.length>900000)break}
+ return out;
+}
+function dataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+$('file').addEventListener('change',async()=>{
+ attached=[];for(const f of [...$('file').files]){
+   try{
+    if(f.type.startsWith('image/'))attached.push({name:f.name,kind:'image',mime:f.type,dataUrl:await dataURL(f)});
+    else if(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'))attached.push({name:f.name,kind:'text',mime:'application/pdf',content:await extractPdf(f)});
+    else attached.push({name:f.name,kind:'text',mime:f.type||'text/plain',content:(await f.text()).slice(0,900000)});
+   }catch(e){alert('Errore leggendo '+f.name)}
+ }
+ $('fileStatus').textContent=attached.length?attached.map(x=>x.name).join(', '):'Nessun allegato';$('clearFiles').classList.toggle('hidden',!attached.length)
+});
+function clearAttached(){attached=[];$('file').value='';$('fileStatus').textContent='Nessun allegato';$('clearFiles').classList.add('hidden')}
+function setAutoJobStatus(text,visible=true){
+ const el=$('autoJobStatus');
+ if(!el)return;
+ el.textContent=String(text||'');
+ el.classList.toggle('hidden',!visible);
+}
+
+async function runAutonomousJob(text,filesSnapshot,wait){
+ let runId=null;
+ const common={
+   files:filesSnapshot,
+   mode:$('mode').value,
+   team:$('team').value,
+   project_id:activeProjectId||$('project').value||null,
+   save_to_library:$('saveLib').checked
+ };
+
+ try{
+   setAutoJobStatus('Autonomous: Planner…');
+   const start=await api('autonomous_start',{message:text,...common});
+   runId=start.run_id;
+
+   if(start.active_project_id){
+     activeProjectId=String(start.active_project_id);
+     localStorage.setItem('assistente_project',activeProjectId);
+     await loadProjects(activeProjectId);
+   }
+
+   const agents=Array.isArray(start.agents)?start.agents:[];
+   if(start.selected_team){
+     setAutoJobStatus(`Autonomous #${runId}: squadra ${start.selected_team} — ${agents.join(', ')}`);
+   }
+   for(let i=0;i<agents.length;i++){
+     setAutoJobStatus(`Autonomous #${runId}: ${agents[i]} (${i+1}/${agents.length})…`);
+     await api('autonomous_agent',{
+       run_id:runId,
+       agent_index:i,
+       files:filesSnapshot,
+       mode:$('mode').value
+     });
+   }
+
+   setAutoJobStatus(`Autonomous #${runId}: Orchestrator…`);
+   await api('autonomous_orchestrate',{run_id:runId});
+
+   setAutoJobStatus(`Autonomous #${runId}: Quality Reviewer…`);
+   const fin=await api('autonomous_review',{run_id:runId});
+
+   wait.remove();
+   add('assistant',fin.answer,fin.message_id);
+   const materializedFiles=await materializeGraphicsStudio(fin.generated_files||[],text);
+   materializedFiles.forEach(addDownload);
+   await maybeAutoRenderGraphics(text,materializedFiles);
+
+   if(fin.warning){
+     setStatus('Esecuzione autonoma completata con avviso: '+fin.warning,true);
+   }else{
+     setStatus('Esecuzione autonoma #'+runId+' completata.');
+   }
+   setAutoJobStatus(`Autonomous #${runId}: completata ✓`);
+   setTimeout(()=>setAutoJobStatus('',false),5000);
+   clearAttached();
+
+ }catch(e){
+   if(runId){
+     try{await api('autonomous_abort',{run_id:runId,error:e?.message||String(e)})}catch{}
+   }
+   wait.remove();
+   add('assistant','Errore Autonomous: '+(e?.message||String(e)));
+   setStatus('Autonomous interrotta: '+(e?.message||String(e)),true);
+   setAutoJobStatus(`Autonomous${runId?' #'+runId:''}: interrotta`,true);
+ }
+}
+
+async function sendMsg(){
+ const text=$('input').value.trim();
+ if(!text&&!attached.length)return;
+
+ const filesSnapshot=[...attached];
+ $('input').value='';
+ add('user',text||'[Analizza allegati]');
+ add('assistant',$('autonomous').checked?'Avvio squadra multi-agente…':'Sto elaborando…');
+ const wait=chat.lastChild;
+
+ if($('autonomous').checked){
+   await runAutonomousJob(text||'[Analizza allegati]',filesSnapshot,wait);
+   return;
+ }
+
+ try{
+   const j=await api('chat',{
+     message:text,
+     files:filesSnapshot,
+     mode:$('mode').value,
+     deep:$('deep').checked,
+     project_id:activeProjectId||$('project').value||null,
+     save_to_library:$('saveLib').checked,
+     autonomous:false,
+     team:$('team').value
+   });
+
+   wait.remove();
+   add('assistant',j.answer,j.message_id);
+   const materializedFiles=await materializeGraphicsStudio(j.generated_files||[],text);
+   materializedFiles.forEach(addDownload);
+   await maybeAutoRenderGraphics(text,materializedFiles);
+
+   if(j.active_project_id){
+     activeProjectId=String(j.active_project_id);
+     localStorage.setItem('assistente_project',activeProjectId);
+     await loadProjects(activeProjectId);
+   }else if(j.refresh_projects){
+     await loadProjects();
+   }
+   clearAttached();
+
+ }catch(e){
+   wait.remove();
+   add('assistant','Errore: '+(e?.message||String(e)));
+ }
+}
+
+async function showHealthStatus(){
+  try{
+    const j=await api('health_check');
+    const r=j.router||{};
+    const f=j.features||{};
+    let msg=`Assistente Stefano ${j.version||''}\n\n`;
+    msg+=`Backend: ${j.ok?'OK':'ERRORE'}\n`;
+    msg+=`FreeLLMAPI: ${r.freellmapi?'configurato':'non configurato'}\n`;
+    msg+=`OpenRouter: ${r.openrouter?'configurato':'non configurato'}\n\n`;
+    msg+=`Autonomous: ${f.autonomous?'OK':'NO'}\n`;
+    msg+=`Sandbox: ${f.sandbox?'OK':'NO'}\n`;
+    msg+=`Memoria: ${f.memory?'OK':'NO'}\n`;
+    msg+=`Progetti: ${f.projects?'OK':'NO'}\n`;
+    msg+=`Web: ${f.web?'OK':'NO'}\n`;
+    msg+=`Parser file JSON: ${f.json_file_parser?'OK':'NO'}\n`;
+    msg+=`Router agenti: ${f.agent_router?'OK':'NO'}\n`;
+    msg+=`Team specializzati: ${f.specialist_teams?'OK':'NO'}\n`;
+    msg+=`Graphics Render PNG/JPG/PDF: ${f.graphics_render?'OK':'NO'}\n`;
+    msg+=`Graphics Lite anti-546: ${f.graphics_lite?'OK':'NO'}\n`;
+    msg+=`Graphics TRUE Lite: ${f.graphics_true_lite?'OK':'NO'}\n`;
+    msg+=`Graphics Direct chat: ${f.graphics_direct?'OK':'NO'}\n`;
+    msg+=`Graphics Studio 2.8: ${f.graphics_studio?'OK':'NO'}\n`;
+    msg+=`Template deterministici: ${f.deterministic_templates?'OK':'NO'}\n`;
+    msg+=`Profilo Macrodental: ${f.macrodental_style_profile?'OK':'NO'}`;
+    msg+=`\nGraphics Master Prompt: ${f.graphics_master_prompt?'OK':'NO'}`;
+    msg+=`\nEstrazione prezzo/IVA/confezione: ${f.direct_fact_extraction?'OK':'NO'}`;
+    msg+=`\nVisual prodotto: ${f.product_visuals?'OK':'NO'}`;
+    msg+=`\nLayout avanzati: ${f.advanced_layouts?'OK':'NO'}`;
+    alert(msg);
+  }catch(e){
+    alert('Errore stato sistema: '+(e?.message||String(e)));
+  }
+}
+
+async function showRouterStatus(){
+ try{
+   const j=await api('router_status');
+   const f=j.freellmapi||{};
+   const o=j.openrouter||{};
+   let msg='AI ROUTER FULL 2.9 GRAPHICS PRO.1 GRAPHICS LITE.1 FILE PARSER FIX\n\n';
+   msg+=`FreeLLMAPI: ${f.configured?'configurato':'non configurato'}\n`;
+   if(f.configured){
+     msg+=`Connessione: ${f.reachable===true?'OK':f.reachable===false?'NON RAGGIUNGIBILE':'non verificata'}\n`;
+     msg+=`Autenticazione: ${f.authenticated===true?'OK':f.authenticated===false?'ERRORE':'non verificata'}\n`;
+     msg+=`Modello/router: ${f.model||'-'}\n`;
+     if(f.detail)msg+=`Dettaglio: ${f.detail}\n`;
+   }
+   msg+=`\nOpenRouter fallback: ${o.configured?'configurato':'non configurato'}\n`;
+   msg+=`Modello: ${o.model||'-'}\n\n`;
+   msg+='Ordine: FreeLLMAPI → OpenRouter.';
+   alert(msg);
+ }catch(e){
+   alert('Errore stato AI Router: '+(e?.message||String(e)));
+ }
+}
+
+async function showGraphicsStudio(){
+ try{
+  const j=await api('graphics_studio_info');
+  alert(`GRAPHICS STUDIO — FULL 2.8
+
+Profilo: ${j.profile?.name||'Macrodental'}
+Motore: template deterministici professionali
+Prompt: breve
+Template: ${(j.templates||[]).join(' • ')}
+
+Uso:
+Modalità Graphics • Deep OFF • Autonomous OFF
+
+Esempio:
+"Mascherine FFP2, 45 pezzi, 10 € IVA 5%. Fammi il volantino in PNG e PDF."
+
+Il sistema decide autonomamente gerarchia, copy e layout, senza placeholder.`);
+ }catch(e){alert('Errore Graphics Studio: '+(e?.message||String(e)));}
+}
+
+async function showAgentsCatalog(){
+ try{
+   const j=await api('agents_catalog');
+   const teams=Array.isArray(j.teams)?j.teams:[];
+   let msg='SQUADRA AI — FULL 2.9 GRAPHICS PRO.1 GRAPHICS LITE\n\n';
+   msg+='Router automatico: '+(j.auto_router?'ATTIVO':'NO')+'\n\n';
+   for(const t of teams){
+     msg+=`${t.name}\n`;
+     msg+=`Agenti: ${(t.agents||[]).join(' • ')}\n`;
+     msg+=`${t.description||''}\n\n`;
+   }
+   msg+='Con Squadra AI = Auto, l’assistente sceglie automaticamente il team in base alla richiesta.';
+   alert(msg);
+ }catch(e){
+   alert('Errore Squadra AI: '+(e?.message||String(e)));
+ }
+}
+
+async function showAutoRuns(){
+ const j=await api('autonomous_runs');
+ alert(j.runs.length?j.runs.map(r=>`#${r.id} [${r.status}] ${r.team} — ${r.objective}`).join('\n\n'):'Nessuna esecuzione autonoma.')
+}
+async function runSelfAudit(){
+ setStatus('Auto-audit in corso...');
+ const j=await api('self_audit');
+ setStatus('Auto-audit completato.');
+ alert(j.proposal||'Nessuna proposta.');
+}
+async function showImprovements(){
+ const j=await api('improvements');
+ alert(j.proposals.length?j.proposals.map(p=>`• ${p.title}\n${p.description}`).join('\n\n---\n\n'):'Nessuna proposta di miglioramento.')
+}
+async function clearChat(){if(confirm('Cancellare la conversazione?')){await api('clear');await load()}}
+function logout(){localStorage.removeItem('assistente_pw');location.reload()}
+
+function setStatus(msg, isError=false){
+  const el=$('uiStatus');
+  if(!el) return;
+  el.textContent=msg;
+  el.style.color=isError?'#ff9aa9':'#9eabc9';
+}
+
+function safeBind(id,event,handler){
+  const el=$(id);
+  if(!el){
+    console.error('Elemento mancante:',id);
+    setStatus('Errore interfaccia: elemento mancante '+id,true);
+    return;
+  }
+  el.addEventListener(event, async (ev)=>{
+    try{
+      if(event==='click') ev.preventDefault();
+      await handler(ev);
+    }catch(err){
+      console.error(err);
+      setStatus('Errore: '+(err?.message||err),true);
+      alert('Errore: '+(err?.message||err));
+    }
+  });
+}
+
+function bindUI(){
+  safeBind('btnLogin','click',login);
+  safeBind('btnNewProject','click',newProject);
+  safeBind('btnTasks','click',showTasks);
+  safeBind('btnNewTask','click',newTask);
+  safeBind('btnLibrary','click',showLibrary);
+  safeBind('btnMemories','click',showMemories);
+  safeBind('btnStrategies','click',showStrategies);
+  safeBind('btnGraphicsStudio','click',showGraphicsStudio);
+  safeBind('btnAgents','click',showAgentsCatalog);
+  safeBind('btnAutoRuns','click',showAutoRuns);
+  safeBind('btnSelfAudit','click',runSelfAudit);
+  safeBind('btnImprovements','click',showImprovements);
+  safeBind('btnHealth','click',showHealthStatus);
+  safeBind('btnRouter','click',showRouterStatus);
+  safeBind('btnCloseSandbox','click',()=>{$('sandboxPanel').classList.add('hidden')});
+  safeBind('btnNewChat','click',clearChat);
+  safeBind('btnLogout','click',logout);
+  safeBind('btnAttach','click',()=>{$('file').click()});
+  safeBind('clearFiles','click',clearAttached);
+  safeBind('btnSend','click',sendMsg);
+
+  safeBind('project','change',async ()=>{
+    activeProjectId=$('project').value||'';
+    localStorage.setItem('assistente_project',activeProjectId);
+    setStatus(activeProjectId?'Progetto attivo aggiornato.':'Nessun progetto attivo.');
+  });
+
+  safeBind('input','keydown',async e=>{
+    if(e.key==='Enter'&&!e.shiftKey){
+      e.preventDefault();
+      await sendMsg();
+    }
+  });
+
+  setStatus('Interfaccia FULL 2.9 GRAPHICS PRO.1 GRAPHICS LITE.1 FILE PARSER FIX pronta.');
+}
+
+document.addEventListener('DOMContentLoaded', async ()=>{
+  bindUI();
+  if(password){
+    $('pw').value=password;
+    try{ await login(); }
+    catch(err){ console.error(err); setStatus('Accesso automatico non riuscito.',true); }
+  }
+});
+</script>
+</body></html>
