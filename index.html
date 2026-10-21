@@ -71,6 +71,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <button id="btnGraphicsStudio" class="secondary" type="button">🎨 Graphics Studio</button>
   <button id="btnAgents" class="secondary" type="button">🤖 Squadra AI</button>
   <button id="btnAutoRuns" class="secondary" type="button">🤖 Esecuzioni autonome</button>
+  <button id="btnDeliveryCheck" class="secondary" type="button">🧰 Controlla e correggi file</button>
   <button id="btnSecurityAudit" class="secondary" type="button">🛡️ Audit sicurezza codice</button>
   <button id="btnSelfAudit" class="secondary" type="button">🧪 Auto-audit</button>
   <button id="btnImprovements" class="secondary" type="button">🛠 Proposte miglioramento</button>
@@ -950,7 +951,7 @@ async function checkAndRepairDelivery(result,text){
   if(fixed.repaired){
    const combined={...result,...fixed};
    // Aggiorna il risultato gia registrato, senza perdere le versioni nel progetto.
-   try{await api('delivery_save_repair',{message_id:result.message_id,answer:combined.answer,files:combined.generated_files,project_id:result.active_project_id||null});}
+   try{if(result.message_id)await api('delivery_save_repair',{message_id:result.message_id,answer:combined.answer,files:combined.generated_files,project_id:result.active_project_id||null});}
    catch(e){combined.warning='File corretti disponibili qui; salvataggio della correzione non riuscito: '+(e?.message||String(e));}
    return combined;
   }
@@ -1015,6 +1016,22 @@ async function sendMsgCore(){
    wait.remove();
    add('assistant','Errore: '+(e?.message||String(e)));
  }
+}
+
+async function runDeliveryCheck(){
+ const files=attached.filter(f=>f.kind!=='image'&&typeof f.content==='string').map(f=>({name:f.name,content:f.content}));
+ if(!files.length){setStatus('Allega i file da controllare. Puoi indicare nel messaggio i requisiti della correzione.',true);return;}
+ const objective=$('input').value.trim()||'Controlla e correggi i file allegati mantenendo nomi e contenuti utili.';
+ $('btnDeliveryCheck').disabled=true;
+ try{
+  setStatus('Controllo dei file in corso.');
+  const checked=await api('delivery_check',{message:objective,files});
+  const result=await checkAndRepairDelivery({answer:'File controllati.',generated_files:files,quality:checked.quality},objective);
+  showDeliveryQuality(result.quality);
+  if(result.repaired){add('assistant',result.answer);result.generated_files.forEach(addDownload);}
+  setStatus(result.warning|| (result.repaired?'File corretti e disponibili per il download.':'Controlli completati.'),Boolean(result.warning));
+ }catch(e){setStatus('Controllo non riuscito: '+(e?.message||String(e)),true);}
+ finally{$('btnDeliveryCheck').disabled=false;}
 }
 
 async function runSecurityAudit(){
@@ -1179,6 +1196,7 @@ function bindUI(){
   safeBind('btnAgents','click',showAgentsCatalog);
   safeBind('btnAutoRuns','click',showAutoRuns);
   safeBind('btnSelfAudit','click',runSelfAudit);
+  safeBind('btnDeliveryCheck','click',runDeliveryCheck);
   safeBind('btnSecurityAudit','click',runSecurityAudit);
   safeBind('btnImprovements','click',showImprovements);
   safeBind('btnHealth','click',showHealthStatus);
