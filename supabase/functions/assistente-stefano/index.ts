@@ -62,7 +62,9 @@ function deliveryQuality(objective:string,files:any[]){
 }
 
 async function repairDelivery(body:any){
- const objective=String(body.message||'').slice(0,12000);const files=(Array.isArray(body.files)?body.files:[]).slice(0,25).map((f:any)=>({name:String(f.name||'').slice(0,180),content:String(f.content||'').slice(0,100000)}));
+ const objective=String(body.message||'').slice(0,12000);const originals=Array.isArray(body.files)?body.files:[];
+ if(originals.length>25||originals.some((f:any)=>String(f.name||'').length>180||String(f.content??'').length>100000))throw new Error('File troppo grandi per la riparazione automatica; originali conservati integralmente.');
+ const files=originals.map((f:any)=>({name:String(f.name||''),content:String(f.content??'')}));
  const before=deliveryQuality(objective,files);
  if(!before.issues.length)return {answer:String(body.answer||''),generated_files:files,quality:before,repaired:false};
  if(JSON.stringify(files).length>180000)throw new Error('Output troppo grande per la riparazione automatica; i file originali sono conservati.');
