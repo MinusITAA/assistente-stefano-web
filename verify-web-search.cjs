@@ -10,6 +10,10 @@ assert.equal(ctx.graphicsPublicURL('https://www.shofu.com/product.png').hostname
 const rows=[{url:'https://www.medit.com/i700',title:'Medit i700 scanner',images:{'Medit i700 scanner':'https://www.medit.com/images/medit-i700.jpg','Medit logo':'https://www.medit.com/logo.png','Medit i700 protective cover':'https://www.medit.com/i700-cover.jpg','Other scanner':'http://localhost/image.png'}}];
 const candidates=ctx.graphicsImageCandidates(rows,'Medit i700');assert.equal(candidates.length,1);assert.equal(candidates[0].exact,true);assert.equal(candidates[0].source_url,rows[0].url);
 const weak=ctx.graphicsImageCandidates([{url:'https://www.medit.com/i700',title:'Medit i700 scanner',images:{'Picture':'https://www.medit.com/product.jpg'}}],'Medit i700');assert.equal(weak[0].exact,false);
+const variants=ctx.graphicsImageCandidates([
+ {url:'https://www.shofu.com/en/product/beautifil-flow-plus-x/',title:'Beautifil Flow Plus X',images:{'Beautifil Flow Plus X':'https://www.shofu.com/beautifil-flow-plus-x.png','Beautifil Flow Plus Shade Chart':'https://www.shofu.com/shade-chart.png'}},
+ {url:'https://www.shofu.com/en/product/beautifil-flow-plus/',title:'Beautifil Flow Plus',images:{'Beautifil Flow Plus':'https://www.shofu.com/beautifil-flow-plus.png'}}
+],'Beautifil Flow Plus X Shofu');assert.equal(variants.length,1);assert.equal(variants[0].exact,true);
 async function main(){
  ctx.fetch=async()=>new Response('not an image',{headers:{'content-type':'text/html'}});
  await assert.rejects(ctx.graphicsRasterDataURL('https://www.medit.com/photo.jpg'),/Formato/);
