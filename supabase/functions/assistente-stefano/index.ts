@@ -20,7 +20,7 @@ const CORS_HEADERS={
   "Access-Control-Allow-Methods":"POST, OPTIONS"
 };
 
-const BASE_PROMPT=`Sei Assistente Stefano FULL 2.10 GRAPHICS, un assistente AI personale generalista e operativo.
+const BASE_PROMPT=`Sei Assistente Stefano FULL 2.11 WEB PHOTOS, un assistente AI personale generalista e operativo.
 Parla normalmente in italiano salvo richiesta diversa.
 Non fingere mai di aver eseguito azioni che non hai realmente eseguito.
 Usa memoria, strategie e documenti solo quando pertinenti.
@@ -790,7 +790,7 @@ async function callOpenAICompatible(
         "Content-Type":"application/json"
       };
       if(providerName==="openrouter"){
-        headers["X-Title"]="Assistente Stefano FULL 2.10 GRAPHICS";
+        headers["X-Title"]="Assistente Stefano FULL 2.11 WEB PHOTOS";
       }
 
       const r=await fetch(endpoint,{
@@ -916,7 +916,7 @@ async function callModel(messages:any[],temperature=0.2,max_tokens=5000,retries=
 
 async function routerDiagnostic(){
   const result:any={
-    version:"FULL 2.10 GRAPHICS",
+    version:"FULL 2.11 WEB PHOTOS",
     freellmapi:{
       configured:freeLlmConfigured(),
       base_url:FREELLMAPI_BASE_URL?FREELLMAPI_BASE_URL.replace(/\/\/([^/@]+)@/,"//***@"):"",
@@ -1317,6 +1317,81 @@ function fallbackGraphicsSpec(userText:string){
   }, userText);
 }
 
+// Public product photographs only. Existing Jina configuration is reused.
+function graphicsPublicURL(value:string){
+  try{
+    const u=new URL(value),h=u.hostname.toLowerCase();
+    if(u.protocol!=="https:"||u.username||u.password||(u.port&&u.port!=="443"))return null;
+    if(!h.includes(".")||/[\[\]:]/.test(h)||/^\d+(?:\.\d+)*$/.test(h)||/(^|\.)(localhost|local|internal|test|invalid|example)$/.test(h))return null;
+    return u;
+  }catch{return null;}
+}
+
+function graphicsImageCandidates(rows:any[],query:string){
+  const norm=(v:any)=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  const tokens=norm(query).match(/[a-z0-9]+/g)?.filter(t=>t.length>2&&!['foto','immagine','prodotto','ufficiale','macrodental'].includes(t))||[];
+  const out:any[]=[];
+  for(const row of rows.slice(0,5)){
+    const source=graphicsPublicURL(String(row?.url||""));if(!source)continue;
+    const found:any[]=[];
+    for(const [caption,url] of Object.entries(row.images||{}))found.push({caption,url});
+    for(const m of String(row.content||"").matchAll(/!\[([^\]]*)\]\((https:\/\/[^\s)]+)\)/g))found.push({caption:m[1],url:m[2]});
+    for(const f of found){
+      const url=graphicsPublicURL(String(f.url||""));if(!url||out.some(x=>x.image_url===url.href))continue;
+      const identity=norm(f.caption+' '+decodeURIComponent(url.pathname));
+      if(/logo|favicon|sprite|banner|avatar|payment|paypal|visa|mastercard|cookie|tracking|placeholder|whatsapp|facebook|instagram/.test(identity))continue;
+      if(/\.svg(?:$|\?)/i.test(url.href))continue;
+      if(/accessor|ricambi|puntali|sleeves|cover|cable|cavo/.test(identity)&&!/accessor|ricambi|puntali|sleeves|cover|cable|cavo/.test(norm(query)))continue;
+      const page=norm(row.title+' '+row.description+' '+String(row.content||'').slice(0,1800));
+      const exact=tokens.length>0&&tokens.every(t=>identity.includes(t));
+      const pageMatch=tokens.length>0&&tokens.every(t=>page.includes(t));
+      if(!exact&&!pageMatch)continue;
+      out.push({image_url:url.href,source_url:source.href,source_title:String(row.title||source.hostname).slice(0,180),caption:String(f.caption||row.title||query).slice(0,180),exact,score:exact?100:40});
+    }
+  }
+  return out.sort((a,b)=>b.score-a.score).slice(0,8);
+}
+
+async function graphicsRasterDataURL(url:string){
+  let current=graphicsPublicURL(url);if(!current)throw new Error('URL immagine non valido');
+  for(let step=0;step<4;step++){
+    const r=await fetch(current.href,{redirect:'manual',signal:AbortSignal.timeout(8000),headers:{Accept:'image/png,image/jpeg,image/webp'}});
+    if([301,302,303,307,308].includes(r.status)){
+      current=graphicsPublicURL(new URL(r.headers.get('location')||'',current).href);
+      if(!current)throw new Error('Redirect immagine non valido');continue;
+    }
+    if(!r.ok||!r.body)throw new Error('Foto non scaricabile');
+    const mime=(r.headers.get('content-type')||'').split(';')[0].toLowerCase();
+    if(!['image/png','image/jpeg','image/webp'].includes(mime))throw new Error('Formato foto non supportato');
+    if(Number(r.headers.get('content-length')||0)>4000000)throw new Error('Foto troppo grande');
+    const reader=r.body.getReader(),chunks:Uint8Array[]=[];let size=0;
+    try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>4000000)throw new Error('Foto troppo grande');chunks.push(value);}}finally{await reader.cancel().catch(()=>{});}
+    if(size<3000)throw new Error('Foto troppo piccola');
+    const bytes=new Uint8Array(size);let offset=0;for(const c of chunks){bytes.set(c,offset);offset+=c.length;}
+    let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));
+    return `data:${mime};base64,${btoa(binary)}`;
+  }
+  throw new Error('Troppi redirect immagine');
+}
+
+async function graphicsImageSearch(queryRaw:string){
+  const query=String(queryRaw||'').replace(/[\r\n]/g,' ').trim().slice(0,180);
+  if(query.length<3)return{images:[],warning:'Indica il nome del prodotto, possibilmente marca e modello.'};
+  if(!JINA_API_KEY)return{images:[],warning:'Ricerca immagini non disponibile: Jina non configurato.'};
+  const r=await fetch('https://s.jina.ai/'+encodeURIComponent(query+' foto prodotto sito ufficiale'),{
+    headers:{Authorization:`Bearer ${JINA_API_KEY}`,Accept:'application/json','X-Retain-Images':'all','X-With-Images-Summary':'true','X-Timeout':'12'},
+    signal:AbortSignal.timeout(20000)
+  });
+  if(!r.ok)return{images:[],warning:`Ricerca foto non disponibile (HTTP ${r.status}).`};
+  const result=await r.json(),rows=Array.isArray(result.data)?result.data:[];
+  const candidates=graphicsImageCandidates(rows,query),images:any[]=[];
+  // Bound time and payload. A failed host never prevents trying the next one.
+  const downloaded=await Promise.allSettled(candidates.slice(0,4).map(async c=>({...c,dataUrl:await graphicsRasterDataURL(c.image_url)})));
+  for(const item of downloaded)if(item.status==='fulfilled')images.push(item.value);
+  return {query,images:images.slice(0,3),warning:images.length?'':'Nessuna foto utilizzabile trovata. Puoi allegare la foto originale.'};
+}
+
+
 async function createGraphicsStudioSpec(userText:string,files:any[]){
   const fc=buildFileContext(files);
   const attachmentText=fc.txt?String(fc.txt).slice(0,18000):"";
@@ -1344,7 +1419,7 @@ async function answerWithAI(userText:string,files:any[],opts:any){
   const resolvedMode=requestedMode==="auto"?autoModeForObjective(userText):requestedMode;
   const graphicsDirect=resolvedMode==="graphics";
 
-  // FULL 2.10 GRAPHICS
+  // FULL 2.11 WEB PHOTOS
   // Per volantini/grafiche in chat normale evitiamo completamente:
   // history, memorie, strategie, libreria e web.
   // Una sola chiamata AI, contesto minimo, output limitato.
@@ -2163,7 +2238,7 @@ Deno.serve(async(req)=>{
     if(action==="health_check"){
       return json({
         ok:true,
-        version:"FULL 2.10 GRAPHICS",
+        version:"FULL 2.11 WEB PHOTOS",
         router:{
           freellmapi:freeLlmConfigured(),
           openrouter:Boolean(OPENROUTER_API_KEY)
@@ -2178,6 +2253,7 @@ Deno.serve(async(req)=>{
           agent_router:true,
           specialist_teams:true,
           graphics_render:true,
+          graphics_web_photos:true,
           graphics_lite:true,
           graphics_true_lite:true,
           graphics_direct:true,
@@ -2195,9 +2271,14 @@ Deno.serve(async(req)=>{
       });
     }
 
+    if(action==="graphics_image_search"){
+      try{return json(await graphicsImageSearch(String(body.query||"")));}
+      catch(e){return json({images:[],warning:"Ricerca foto non disponibile: "+errorText(e)});}
+    }
+
     if(action==="graphics_studio_info"){
       return json({
-        version:"FULL 2.10 GRAPHICS",
+        version:"FULL 2.11 WEB PHOTOS",
         profile:MACRODENTAL_STYLE_PROFILE,
         templates:["hero_product","split_offer","catalog_clean","course_master"],
         renderer:"deterministic_frontend",
@@ -2207,7 +2288,7 @@ Deno.serve(async(req)=>{
 
     if(action==="agents_catalog"){
       return json({
-        version:"FULL 2.10 GRAPHICS",
+        version:"FULL 2.11 WEB PHOTOS",
         auto_router:true,
         teams:agentsCatalog()
       });
