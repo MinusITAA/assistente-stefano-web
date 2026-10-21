@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FULL 2.11 WEB PHOTOS</title>
+<title>FULL 2.12 CYBERSECURITY</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
 <style>
 :root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
@@ -29,7 +29,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 
 <div id="app" class="app hidden">
-<div class="top"><h1>🤖 Assistente Stefano FULL 2.11 WEB PHOTOS</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
+<div class="top"><h1>🤖 Assistente Stefano FULL 2.12 CYBERSECURITY</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
 <div id="uiStatus" class="small" style="margin:0 0 8px 4px">Interfaccia pronta.</div>
 <div id="autoJobStatus" class="small hidden" style="margin:0 0 8px 4px;padding:8px 10px;background:#111a31;border-radius:9px"></div>
 <div class="grid">
@@ -39,7 +39,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
     <option value="auto">Auto</option><option value="general">Generale</option>
     <option value="developer">Developer</option><option value="graphics">Grafica/Volantini</option>
     <option value="admin">Amministrazione</option><option value="commercial">Commerciale</option>
-    <option value="research">Ricerca</option>
+    <option value="research">Ricerca</option><option value="security">Cybersecurity</option>
   </select>
   <label class="panel"><input id="deep" type="checkbox"><span><b>Deep mode</b><br><span class="small">Planner + reviewer</span></span></label>
   <label class="panel"><input id="autonomous" type="checkbox"><span><b>Autonomous mode</b><br><span class="small">Planner + 3 agenti + reviewer • job separati</span></span></label>
@@ -52,7 +52,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
     <option value="graphics">Graphics</option>
     <option value="commercial">Commercial</option>
     <option value="admin">Admin</option>
-    <option value="trading">Trading Analyst</option>
+    <option value="trading">Trading Analyst</option><option value="security">Cybersecurity</option>
   </select>
   <label class="panel"><input id="saveLib" type="checkbox"><span><b>Salva allegati</b><br><span class="small">Aggiungili alla libreria del progetto</span></span></label>
 
@@ -70,13 +70,14 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <button id="btnGraphicsStudio" class="secondary" type="button">🎨 Graphics Studio</button>
   <button id="btnAgents" class="secondary" type="button">🤖 Squadra AI</button>
   <button id="btnAutoRuns" class="secondary" type="button">🤖 Esecuzioni autonome</button>
+  <button id="btnSecurityAudit" class="secondary" type="button">🛡️ Audit sicurezza codice</button>
   <button id="btnSelfAudit" class="secondary" type="button">🧪 Auto-audit</button>
   <button id="btnImprovements" class="secondary" type="button">🛠 Proposte miglioramento</button>
   <button id="btnHealth" class="secondary" type="button">🩺 Stato sistema</button>
   <button id="btnRouter" class="secondary" type="button">🌐 Stato AI Router</button>
   <button id="btnNewChat" class="danger" type="button">Nuova conversazione</button>
   <button id="btnLogout" class="danger" type="button">Esci</button>
-  <div class="panel small">FULL 2.11 WEB PHOTOS: FULL 2.11 WEB PHOTOS: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
+  <div class="panel small">FULL 2.12 CYBERSECURITY: FULL 2.12 CYBERSECURITY: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
   <div class="panel small">Sandbox locale: Python/JavaScript/HTML. Email, calendario e trading richiedono connettori separati.</div>
 </aside>
 
@@ -974,6 +975,18 @@ async function sendMsg(){
  }
 }
 
+async function runSecurityAudit(){
+ const files=attached.filter(f=>f.kind!=='image'&&f.content).map(f=>({name:f.name,content:f.content}));
+ if(!files.length&&$('input').value.trim())files.push({name:'codice_incollato.txt',content:$('input').value});
+ if(!files.length){setStatus('Allega il codice o incollalo nel campo messaggio, poi avvia Audit sicurezza codice.',true);return;}
+ setStatus('Analisi statica del codice in corso…');
+ const report=await api('security_audit',{files});
+ const body=report.findings.length?report.findings.map(f=>'['+f.severity+'] '+f.file+':'+f.line+' — '+f.title+'\n'+f.remediation).join('\n\n'):'Nessun indicatore rilevato dalle regole disponibili.';
+ add('assistant','Audit statico: '+report.files_reviewed+' file analizzati.\n\n'+body+'\n\n'+report.limitations);
+ addDownload({name:'audit_sicurezza.json',content:JSON.stringify(report,null,2)});
+ setStatus('Audit statico completato: '+report.findings.length+' rilievi da verificare.');
+}
+
 async function showHealthStatus(){
   try{
     const j=await api('health_check');
@@ -1013,7 +1026,7 @@ async function showRouterStatus(){
    const j=await api('router_status');
    const f=j.freellmapi||{};
    const o=j.openrouter||{};
-   let msg='AI ROUTER FULL 2.11 WEB PHOTOS\n\n';
+   let msg='AI ROUTER FULL 2.12 CYBERSECURITY\n\n';
    msg+=`FreeLLMAPI: ${f.configured?'configurato':'non configurato'}\n`;
    if(f.configured){
      msg+=`Connessione: ${f.reachable===true?'OK':f.reachable===false?'NON RAGGIUNGIBILE':'non verificata'}\n`;
@@ -1124,6 +1137,7 @@ function bindUI(){
   safeBind('btnAgents','click',showAgentsCatalog);
   safeBind('btnAutoRuns','click',showAutoRuns);
   safeBind('btnSelfAudit','click',runSelfAudit);
+  safeBind('btnSecurityAudit','click',runSecurityAudit);
   safeBind('btnImprovements','click',showImprovements);
   safeBind('btnHealth','click',showHealthStatus);
   safeBind('btnRouter','click',showRouterStatus);
@@ -1147,7 +1161,7 @@ function bindUI(){
     }
   });
 
-  setStatus('Interfaccia FULL 2.11 WEB PHOTOS pronta.');
+  setStatus('Interfaccia FULL 2.12 CYBERSECURITY pronta.');
 }
 
 document.addEventListener('DOMContentLoaded', async ()=>{
