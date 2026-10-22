@@ -1,5 +1,7 @@
 # Esecutore locale di Assistente Stefano
 
+Aggiornamento 0.1.1: porta 8788 per evitare il conflitto con il bridge FreeLLMAPI storico sulla 8787. Il sito mantiene la scelta 8787 per compatibilita con la versione precedente. Non esporre mai l'esecutore con Cloudflare Tunnel: il bridge AI e l'esecutore sono servizi distinti. Per aggiornare, estrarre i file del nuovo ZIP nella cartella del programma senza eliminare `workspace`, `.history` o `config.json`, arrestare la vecchia console e riavviare `Start-Executor.cmd`. Chiavi e impostazioni esistenti non vengono riscritte.
+
 Stato: implementazione preparata, non attiva. L'attivazione amplia l'accesso dell'agente al PC e richiede un'approvazione specifica del proprietario. Non vengono cambiate chiavi, password o Secrets Supabase.
 
 ## Perimetro preparato
@@ -8,7 +10,7 @@ Stato: implementazione preparata, non attiva. L'attivazione amplia l'accesso del
 - Controlli reali: parsing JSON e `node --check`, che controlla sintassi senza eseguire i file.
 - Browser opzionale: contesto separato senza sessioni personali, sola apertura/lettura/screenshot su `https://minusitaa.github.io`. Nessun click, compilazione di moduli o login.
 - Nessuna shell arbitraria, esecuzione Python, installazione automatica, push GitHub, deploy Supabase o trading.
-- Servizio solo su `127.0.0.1:8787`, origine ammessa `https://minusitaa.github.io`, abbinamento monouso entro 5 minuti, massimo 5 tentativi, sessione di 60 minuti. Il token rimane in memoria nel browser.
+- Servizio solo su `127.0.0.1:8788`, origine ammessa `https://minusitaa.github.io`, abbinamento monouso entro 5 minuti, massimo 5 tentativi, sessione di 60 minuti. Il token rimane in memoria nel browser.
 - Il modello sceglie un passo alla volta usando i risultati reali. Limite 12 passi/5 minuti per richiesta. Il pulsante Ferma interrompe prima del passo successivo; un passo in corso può completarsi.
 - Log locale solo di strumento, percorso, data ed esito. Non registra codice, contenuti o token. Il filtraggio credenziali è precauzionale e non garantisce di riconoscere ogni segreto: non copiare credenziali nella cartella.
 
