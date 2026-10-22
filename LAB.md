@@ -11,6 +11,12 @@ Nuovi strumenti disponibili nel sito dopo il caricamento della versione 2.15, se
 Pulsante `Prova test e anteprima`: collaudo indipendente dal collegamento locale. Deve mostrare due test riusciti sulla somma, fallimenti sulla versione difettosa, arresto del ciclo infinito, blocco dei moduli Node e della rete, compilazione Nome e click che produce `Ciao Stefano`.
 
 Verifiche automatiche: `node verify-lab.cjs` controlla il caricamento CommonJS, risultati positivi/negativi e assert; il pulsante del sito verifica Worker, CSP, timeout e DOM nel browser reale. Il rapporto JSON è scaricabile. Gli esiti non dimostrano assenza di difetti o sicurezza totale.
+# Laboratorio file 2.16
+
+Dal menu Laboratorio file si possono scegliere fino a 10 file `.js`/`.cjs` (200 KB totali), selezionare il file di test ed eseguire il Worker offline senza provider AI o esecutore locale. I file rimangono nella memoria della scheda e non vengono inviati al backend. Il rapporto scaricabile include nomi, hash SHA-256, test e risultati. Le dipendenze relative devono essere fra i file scelti nella stessa cartella; niente npm o runtime Node completo.
+
+Apri anteprima HTML carica un file `.html`/`.htm` autonomo fino a 200 KB nell'iframe isolato. I controlli della pagina possono essere provati direttamente. Il laboratorio non modifica i file originali. Per usare nuove funzioni, ricaricare il sito; se si usa l'esecutore locale, il collegamento va rifatto dopo il ricaricamento.
+
 # Aggiornamento 2.15.1
 
 Le asserzioni su eccezioni e Promise verificano anche il tipo atteso e riconoscono valori lanciati come `null` o `0`. I confronti profondi di tipi non supportati (ad esempio Map e Set) e i criteri di eccezione non supportati falliscono esplicitamente, evitando risultati positivi ingannevoli. Il collaudo del laboratorio include questi casi e funziona senza provider AI.

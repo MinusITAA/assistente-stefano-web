@@ -3,6 +3,13 @@ const source=fs.readFileSync(path.join(__dirname,'executor-lab.js'),'utf8');new 
 const worker=source.slice(source.indexOf('function testWorker(){'),source.indexOf('function bridge(){'));
 async function run(files,entry){let result;const c={self:{postMessage:r=>{result=r;}},console:{log(){}}};vm.createContext(c);vm.runInContext(worker+';testWorker();',c);await c.self.onmessage({data:{files,entry}});return result;}
 (async()=>{
+const uiContext={window:{}};vm.createContext(uiContext);vm.runInContext(source,uiContext);
+const fake=(name,text,size=text.length)=>({name,size,text:async()=>text});
+let selected=await uiContext.window.prepareStefanoLabFiles([fake('math.cjs','exports.add=(a,b)=>a+b;'),fake('math.test.cjs','test("x",()=>assert.ok(true));')]);assert.equal(selected.entries.join(','),'math.test.cjs');
+await assert.rejects(uiContext.window.prepareStefanoLabFiles([fake('same.js',''),fake('same.js','')]),/stesso nome/);
+await assert.rejects(uiContext.window.prepareStefanoLabFiles([fake('../hidden.js','')]),/Nome file/);
+await assert.rejects(uiContext.window.prepareStefanoLabFiles([fake('large.js','',200001)]),/200 KB/);
+await assert.rejects(uiContext.window.prepareStefanoLabFiles(Array.from({length:11},(_,i)=>fake('f'+i+'.js',''))),/1 a 10/);
 const tests="const test=require('node:test');const assert=require('node:assert/strict');const {add}=require('./math.cjs');test('sum',()=>assert.equal(add(2,3),5));test('neg',()=>assert.equal(add(-2,1),-1));";
 let r=await run({'math.cjs':'exports.add=(a,b)=>a+b;','math.test.cjs':tests},'math.test.cjs');assert(r.passed);assert.equal(r.total,2);
 r=await run({'math.cjs':'exports.add=(a,b)=>a-b;','math.test.cjs':tests},'math.test.cjs');assert.equal(r.passed,false);assert.equal(r.failed,2);

@@ -103,4 +103,16 @@
   close(){this.frame?.remove();this.frame=null;this.container.classList.add('hidden');}
  }
  window.StefanoLab=StefanoLab;
+ window.prepareStefanoLabFiles=async function(selected){
+  const items=Array.from(selected||[]);if(!items.length||items.length>10)throw new Error('Scegli da 1 a 10 file JavaScript.');
+  const files=Object.create(null);let bytes=0;
+  for(const file of items){
+   if(!/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*\.(?:cjs|js)$/i.test(file.name))throw new Error('Nome file non supportato: '+file.name);
+   if(Object.hasOwn(files,file.name))throw new Error('Due file hanno lo stesso nome: '+file.name);
+   bytes+=file.size;if(bytes>200000)throw new Error('I sorgenti superano il limite complessivo di 200 KB.');
+   files[file.name]=await file.text();
+  }
+  const names=Object.keys(files),tests=names.filter(n=>/(?:^test[_.-]|[_.-](?:test|spec)\.)/i.test(n));
+  return {files,entries:tests.length?tests:names,bytes};
+ };
 })();
