@@ -945,7 +945,9 @@ async function callOpenAICompatible(
       if(!r.ok){
         const txt=await r.text();
         lastError=`${providerName} HTTP ${r.status}: ${txt.slice(0,900)}`;
-        const retryable=[408,409,429,500,502,503,504].includes(r.status);
+        const quotaExhausted=r.status===429&&/free-models-per-day|daily.{0,30}(?:limit|quota)|quota.{0,30}exceeded/i.test(txt);
+        const retryable=!quotaExhausted&&[408,409,429,500,502,503,504].includes(r.status);
+        if(quotaExhausted)throw Object.assign(new Error(lastError),{noRetry:true});
         if(retryable && attempt<retries){
           await sleep(700*(attempt+1));
           continue;
@@ -985,7 +987,7 @@ async function callOpenAICompatible(
     }catch(e){
       lastError=errorText(e);
       if(
-        attempt<retries &&
+        !(e as any)?.noRetry && attempt<retries &&
         /fetch|network|timeout|429|408|409|500|502|503|504/i.test(lastError)
       ){
         await sleep(750*(attempt+1));
@@ -2656,6 +2658,10 @@ Deno.serve(async(req)=>{
   }catch(e){
     const msg=errorText(e);
     console.error("Assistente Stefano error:",msg);
+    if(/Tutti i provider AI disponibili hanno fallito|free-models-per-day/i.test(msg)){
+      const quota=/free-models-per-day|daily.{0,30}(?:limit|quota)/i.test(msg);
+      return json({error:quota?'AI temporaneamente non disponibile: quota giornaliera del provider esaurita e nessun provider alternativo disponibile. Riprova dopo il rinnovo della quota. I file gia creati sono conservati.':'AI temporaneamente non disponibile: i provider configurati non rispondono. I file gia creati sono conservati; riprova piu tardi.',code:quota?'ai_daily_quota':'ai_unavailable'},503);
+    }
     return json({error:msg,detail:msg},500);
   }
 });
