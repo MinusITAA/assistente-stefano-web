@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FULL 2.15 TEST LAB</title>
+<title>FULL 2.15.1 TEST LAB</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
 <style>
 :root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
@@ -29,7 +29,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 
 <div id="app" class="app hidden">
-<div class="top"><h1>🤖 Assistente Stefano FULL 2.15 TEST LAB</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
+<div class="top"><h1>🤖 Assistente Stefano FULL 2.15.1 TEST LAB</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
 <div id="uiStatus" class="small" style="margin:0 0 8px 4px">Interfaccia pronta.</div>
 <div id="autoJobStatus" class="small hidden" style="margin:0 0 8px 4px;padding:8px 10px;background:#111a31;border-radius:9px"></div>
 <div class="grid">
@@ -80,7 +80,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <button id="btnRouter" class="secondary" type="button">🌐 Stato AI Router</button>
   <button id="btnNewChat" class="danger" type="button">Nuova conversazione</button>
   <button id="btnLogout" class="danger" type="button">Esci</button>
-  <div class="panel small">FULL 2.15 TEST LAB: FULL 2.15 TEST LAB: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
+  <div class="panel small">FULL 2.15.1 TEST LAB: FULL 2.15.1 TEST LAB: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
   <div class="panel small">Sandbox locale: Python/JavaScript/HTML. Email, calendario e trading richiedono connettori separati.</div>
 </aside>
 
@@ -105,7 +105,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 </div>
 
-<script src="executor-lab.js?v=2.15"></script>
+<script src="executor-lab.js?v=2.15.1"></script>
 <script>
 const endpoint="https://tljicllyygtjhdrrcwcl.supabase.co/functions/v1/assistente-stefano";
 let password=localStorage.getItem('assistente_pw')||'',attached=[],lastAssistantId=null,activeProjectId=localStorage.getItem('assistente_project')||'';
@@ -1000,15 +1000,16 @@ async function demoExecutorLab(){
   const lab=getExecutorLab();
   const files={'math.cjs':'exports.add=(a,b)=>a+b;', 'math.test.cjs':`const test=require('node:test');const assert=require('node:assert/strict');const {add}=require('./math.cjs');test('somma',()=>assert.equal(add(2,3),5));test('negativi',()=>assert.equal(add(-2,1),-1));`};
   const good=await lab.test(files,'math.test.cjs');
+  const assertions=await lab.test({'assertions.cjs':`test('eccezioni falsey rilevate',()=>assert.throws(()=>{throw null}));test('tipo rigetto errato rilevato',async()=>assert.rejects(()=>assert.rejects(()=>Promise.reject(new Error('bad')),TypeError),/Tipo eccezione/));test('Map non supportate non superano il test',()=>assert.throws(()=>assert.deepEqual(new Map([['x',1]]),new Map([['x',2]])),/non supportato/));`},'assertions.cjs');
   const bad=await lab.test({...files,'math.cjs':'exports.add=(a,b)=>a-b;'},'math.test.cjs');
   const timeout=await lab.test({'loop.test.cjs':'while(true){}'},'loop.test.cjs');
   const escape=await lab.test({'network.test.cjs':`const test=require('node:test');const assert=require('node:assert/strict');test('nessun accesso Node al PC',()=>assert.throws(()=>require('node:fs')));test('rete bloccata',async()=>{await assert.rejects(()=>fetch('https://example.com/'));});`},'network.test.cjs');
   await lab.open(`<label>Nome <input id="nome"></label><button id="saluta" onclick="document.getElementById('risultato').textContent='Ciao '+document.getElementById('nome').value">Saluta</button><p id="risultato"></p>`);
   await lab.action('fill',{selector:'#nome',value:'Stefano'});
   const clicked=await lab.action('click',{selector:'#saluta'});
-  const passed=good.passed===true&&bad.passed===false&&timeout.timed_out===true&&escape.passed===true&&clicked.text.includes('Ciao Stefano');
+  const passed=assertions.passed===true&&good.passed===true&&bad.passed===false&&timeout.timed_out===true&&escape.passed===true&&clicked.text.includes('Ciao Stefano');
   add('assistant','Collaudo laboratorio: '+(passed?'SUPERATO':'DA VERIFICARE')+'\n'+JSON.stringify({test_corretti:good,test_difettosi:bad,limite_tempo:timeout,isolamento:escape,browser:clicked},null,2));
-  addDownload({name:'collaudo_laboratorio.json',content:JSON.stringify({passed,good,bad,timeout,escape,browser:clicked},null,2)});
+  addDownload({name:'collaudo_laboratorio.json',content:JSON.stringify({passed,assertions,good,bad,timeout,escape,browser:clicked},null,2)});
   setStatus('Collaudo laboratorio '+(passed?'superato.':'da verificare.'),!passed);
  }catch(e){setStatus('Laboratorio: '+(e?.message||String(e)),true);}
  finally{$('btnLabDemo').disabled=false;}
@@ -1191,7 +1192,7 @@ async function showRouterStatus(){
    const j=await api('router_status');
    const f=j.freellmapi||{};
    const o=j.openrouter||{};
-   let msg='AI ROUTER FULL 2.15 TEST LAB\n\n';
+   let msg='AI ROUTER FULL 2.15.1 TEST LAB\n\n';
    msg+=`FreeLLMAPI: ${f.configured?'configurato':'non configurato'}\n`;
    if(f.configured){
      msg+=`Connessione: ${f.reachable===true?'OK':f.reachable===false?'NON RAGGIUNGIBILE':'non verificata'}\n`;
@@ -1333,7 +1334,7 @@ function bindUI(){
     }
   });
 
-  setStatus('Interfaccia FULL 2.15 TEST LAB pronta.');
+  setStatus('Interfaccia FULL 2.15.1 TEST LAB pronta.');
 }
 
 document.addEventListener('DOMContentLoaded', async ()=>{

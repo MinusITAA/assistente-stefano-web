@@ -12,6 +12,7 @@
     if(!a||!b||typeof a!=='object'||typeof b!=='object'||Object.getPrototypeOf(a)!==Object.getPrototypeOf(b))return false;
     if(a instanceof Date)return a.getTime()===b.getTime();
     if(a instanceof RegExp)return a.source===b.source&&a.flags===b.flags;
+    if(!Array.isArray(a)&&Object.getPrototypeOf(a)!==Object.prototype&&Object.getPrototypeOf(a)!==null)throw new Error('deepEqual: tipo non supportato dal laboratorio');
     if(seen.has(a))return seen.get(a)===b;seen.set(a,b);
     const ak=Reflect.ownKeys(a),bk=Reflect.ownKeys(b);
     return ak.length===bk.length&&ak.every(k=>Object.hasOwn(b,k)&&deep(a[k],b[k],seen));
@@ -20,10 +21,11 @@
     ok:(x,m)=>{if(!x)fail(m);},
     equal:(a,b,m)=>{if(!Object.is(a,b))fail(m||`${stringify(a)} diverso da ${stringify(b)}`);},
     deepEqual:(a,b,m)=>{if(!deep(a,b))fail(m||'Oggetti diversi');},
-    throws:(fn,expected)=>{let caught;try{fn();}catch(e){caught=e;}if(!caught)fail('Eccezione attesa non sollevata');if(typeof expected==='function'&&!(caught instanceof expected))fail('Tipo eccezione diverso da quello atteso');if(expected instanceof RegExp&&!expected.test(String(caught.message)))fail('Eccezione diversa da quella attesa');}
+    throws:(fn,expected)=>{let caught,thrown=false;try{fn();}catch(e){caught=e;thrown=true;}if(!thrown)fail('Eccezione attesa non sollevata');matchError(caught,expected);}
    });
    assert.strictEqual=assert.equal;assert.deepStrictEqual=assert.deepEqual;
-   assert.rejects=async(fn,expected)=>{let caught;try{await (typeof fn==='function'?fn():fn);}catch(e){caught=e;}if(!caught)fail('Promise doveva fallire');if(expected instanceof RegExp&&!expected.test(String(caught.message)))fail('Errore diverso da quello atteso');};
+   function matchError(caught,expected){if(expected===undefined)return;if(typeof expected==='function'){if(!(caught instanceof expected))fail('Tipo eccezione diverso da quello atteso');return;}if(expected instanceof RegExp){if(!expected.test(String(caught?.message??caught)))fail('Eccezione diversa da quella attesa');return;}fail('Criterio eccezione non supportato: usa un costruttore Error o RegExp');}
+   assert.rejects=async(fn,expected)=>{let caught,rejected=false;try{await (typeof fn==='function'?fn():fn);}catch(e){caught=e;rejected=true;}if(!rejected)fail('Promise doveva fallire');matchError(caught,expected);};
    const test=(name,fn)=>{if(typeof fn!=='function')throw new Error('Il test richiede una funzione');tests.push({name:String(name).slice(0,180),fn});};test.test=test;test.it=test;
    globalThis.test=test;globalThis.assert=Object.freeze(assert);
    console.log=(...values)=>{if(logs.join('').length<4000)logs.push(values.map(String).join(' ').slice(0,400));};

@@ -11,3 +11,7 @@ Nuovi strumenti disponibili nel sito dopo il caricamento della versione 2.15, se
 Pulsante `Prova test e anteprima`: collaudo indipendente dal collegamento locale. Deve mostrare due test riusciti sulla somma, fallimenti sulla versione difettosa, arresto del ciclo infinito, blocco dei moduli Node e della rete, compilazione Nome e click che produce `Ciao Stefano`.
 
 Verifiche automatiche: `node verify-lab.cjs` controlla il caricamento CommonJS, risultati positivi/negativi e assert; il pulsante del sito verifica Worker, CSP, timeout e DOM nel browser reale. Il rapporto JSON è scaricabile. Gli esiti non dimostrano assenza di difetti o sicurezza totale.
+# Aggiornamento 2.15.1
+
+Le asserzioni su eccezioni e Promise verificano anche il tipo atteso e riconoscono valori lanciati come `null` o `0`. I confronti profondi di tipi non supportati (ad esempio Map e Set) e i criteri di eccezione non supportati falliscono esplicitamente, evitando risultati positivi ingannevoli. Il collaudo del laboratorio include questi casi e funziona senza provider AI.
+
