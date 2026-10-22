@@ -10,6 +10,12 @@ let seen;c.callModel=async m=>{seen=m;return '{"status":"tool","message":"leggo"
 await assert.rejects(c.executorNextStep({message:'fai',tools:[]}));
 const r=await c.executorNextStep({message:'Crea un JSON',tools:['files.list','shell'],observations:[{error:'demo'}]});assert.equal(r.status,'tool');
 const payload=JSON.parse(seen[1].content);assert.deepEqual(payload.available_tools,['files.list']);assert(seen[0].content.includes('NON esegue codice'));
+c.callModel=async()=>JSON.stringify({status:'tool',action:{tool:'javascript.test',path:'test.cjs'}});
+const observation={action:{tool:'javascript.test',path:'test.cjs'},result:{passed:false,hashes:{'test.cjs':'abc'},error:'File/modulo mancante: math.cjs'}};
+const recovered=await c.executorNextStep({message:'test',tools:['javascript.test'],observations:[observation]});assert(recovered.action.paths.includes('math.cjs'));assert(recovered.action.paths.includes('test.cjs'));
+const blocked=await c.executorNextStep({message:'test',tools:['javascript.test'],observations:[observation,observation]});assert.equal(blocked.status,'blocked');
+const unsafe={...observation,result:{passed:false,error:'File/modulo mancante: ../secret.cjs'}};
+const guarded=await c.executorNextStep({message:'test',tools:['javascript.test'],observations:[unsafe]});assert(!guarded.action.paths.includes('../secret.cjs'));
 const h=fs.readFileSync(path.join(root,'index.html'),'utf8');assert(h.includes('http://127.0.0.1:8787'));assert(!h.includes("localStorage.setItem('executor"));assert(h.includes('i<12'));assert(h.includes('executorStop'));assert(h.includes("if($('useExecutor').checked)"));
 console.log('PASS executor planner: strict tool envelope, capability filtering, malformed output rejection, bounded frontend loop and memory-only session');
 })().catch(e=>{console.error(e);process.exitCode=1});
