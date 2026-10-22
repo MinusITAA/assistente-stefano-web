@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FULL 2.14 EXECUTOR</title>
+<title>FULL 2.15 TEST LAB</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
 <style>
 :root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
@@ -29,7 +29,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 
 <div id="app" class="app hidden">
-<div class="top"><h1>🤖 Assistente Stefano FULL 2.14 EXECUTOR</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
+<div class="top"><h1>🤖 Assistente Stefano FULL 2.15 TEST LAB</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
 <div id="uiStatus" class="small" style="margin:0 0 8px 4px">Interfaccia pronta.</div>
 <div id="autoJobStatus" class="small hidden" style="margin:0 0 8px 4px;padding:8px 10px;background:#111a31;border-radius:9px"></div>
 <div class="grid">
@@ -44,7 +44,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <label class="panel"><input id="deep" type="checkbox"><span><b>Deep mode</b><br><span class="small">Planner + reviewer</span></span></label>
   <label class="panel"><input id="smartAuto" type="checkbox" checked><span><b>Esecuzione intelligente</b><br><span class="small">Sceglie il flusso e controlla i file; prova una correzione se serve</span></span></label>
   <label class="panel"><input id="autonomous" type="checkbox"><span><b>Autonomous mode</b><br><span class="small">Planner + 3 agenti + reviewer • job separati</span></span></label>
-  <details class="panel" style="display:block"><summary>Esecutore locale</summary><div class="small">Cartella dedicata e browser separato. Avvia il programma locale e inserisci qui il codice temporaneo.</div><input id="executorCode" type="password" autocomplete="off" placeholder="Codice di abbinamento"><button id="btnExecutorPreview" type="button">Anteprima del primo passo</button><button id="btnExecutorConnect" type="button">Collega esecutore</button><button id="btnExecutorDisconnect" type="button">Scollega</button><label><input id="useExecutor" type="checkbox"> Usa esecutore per questa richiesta</label><div id="executorStatus" class="small">Non collegato</div><button id="btnExecutorStop" type="button">Ferma dopo il passo corrente</button></details>
+  <details class="panel" style="display:block"><summary>Esecutore locale</summary><div class="small">Cartella dedicata e browser separato. Avvia il programma locale e inserisci qui il codice temporaneo.</div><input id="executorCode" type="password" autocomplete="off" placeholder="Codice di abbinamento"><button id="btnLabDemo" type="button">Prova test e anteprima</button><button id="btnExecutorPreview" type="button">Anteprima del primo passo</button><button id="btnExecutorConnect" type="button">Collega esecutore</button><button id="btnExecutorDisconnect" type="button">Scollega</button><label><input id="useExecutor" type="checkbox"> Usa esecutore per questa richiesta</label><div id="executorStatus" class="small">Non collegato</div><button id="btnExecutorStop" type="button">Ferma dopo il passo corrente</button></details>
   <div class="small">Squadra AI</div>
   <select id="team">
     <option value="auto" selected>✨ Auto — scegli la squadra</option>
@@ -80,7 +80,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <button id="btnRouter" class="secondary" type="button">🌐 Stato AI Router</button>
   <button id="btnNewChat" class="danger" type="button">Nuova conversazione</button>
   <button id="btnLogout" class="danger" type="button">Esci</button>
-  <div class="panel small">FULL 2.14 EXECUTOR: FULL 2.14 EXECUTOR: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
+  <div class="panel small">FULL 2.15 TEST LAB: FULL 2.15 TEST LAB: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
   <div class="panel small">Sandbox locale: Python/JavaScript/HTML. Email, calendario e trading richiedono connettori separati.</div>
 </aside>
 
@@ -92,6 +92,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 <span id="fileStatus" class="small">Nessun allegato</span>
 <button id="clearFiles" class="secondary hidden" type="button">Rimuovi</button>
 </div>
+<div id="executorLabPanel" class="hidden" style="margin:10px 0"><b>Anteprima interattiva isolata</b><button id="btnCloseLab" type="button">Chiudi anteprima</button><div id="executorLabFrame"></div></div>
 <div id="sandboxPanel" class="bar hidden"><b>🧪 Sandbox</b><pre id="sandboxOutput" style="white-space:pre-wrap;background:#090f1f;padding:10px;border-radius:8px;max-height:220px;overflow:auto"></pre><button id="btnCloseSandbox" class="secondary" type="button">Chiudi</button></div>
 <div class="bar">
 <textarea id="input" placeholder="Chiedimi qualsiasi cosa: ricerca, codice, PDF, volantino, progetto, analisi..."></textarea>
@@ -104,6 +105,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 </div>
 
+<script src="executor-lab.js?v=2.15"></script>
 <script>
 const endpoint="https://tljicllyygtjhdrrcwcl.supabase.co/functions/v1/assistente-stefano";
 let password=localStorage.getItem('assistente_pw')||'',attached=[],lastAssistantId=null,activeProjectId=localStorage.getItem('assistente_project')||'';
@@ -961,6 +963,57 @@ async function checkAndRepairDelivery(result,text){
  finally{setAutoJobStatus('',false);}
 }
 
+
+const LAB_TOOLS=['javascript.test','preview.open','preview.read','preview.click','preview.fill'];
+let executorLab=null;
+function getExecutorLab(){
+ if(typeof StefanoLab==='undefined')throw new Error('Laboratorio non caricato. Ricarica il sito.');
+ if(!executorLab)executorLab=new StefanoLab($('executorLabFrame'));
+ $('executorLabPanel').classList.remove('hidden');return executorLab;
+}
+async function executeLabTool(action){
+ const lab=getExecutorLab();
+ async function readVerified(path){
+  const result=(await localExecutor('/execute',{action:{tool:'files.read',path}})).result;
+  const bytes=new TextEncoder().encode(result.content),digest=await crypto.subtle.digest('SHA-256',bytes),sha=[...new Uint8Array(digest)].map(n=>n.toString(16).padStart(2,'0')).join('');
+  if(sha!==result.sha256)throw new Error('Il file contiene dati filtrati o e cambiato: esecuzione annullata.');
+  return result;
+ }
+ if(action.tool==='javascript.test'){
+  const paths=[...new Set([...(Array.isArray(action.paths)?action.paths:[]),action.path])];
+  if(paths.length>10||paths.some(p=>typeof p!=='string'||!/\.(?:js|cjs)$/i.test(p)))throw new Error('Fornisci massimo 10 file .js/.cjs e il percorso del file di test.');
+  const files={},hashes={};let size=0;
+  for(const path of paths){const f=await readVerified(path);size+=f.content.length;if(size>200000)throw new Error('Sorgenti troppo grandi per il laboratorio');files[path]=f.content;hashes[path]=f.sha256;}
+  return {tool:action.tool,hashes,...await lab.test(files,action.path)};
+ }
+ if(action.tool==='preview.open'){
+  if(typeof action.path!=='string'||! /\.html?$/i.test(action.path))throw new Error('Usa un file HTML.');
+  const file=await readVerified(action.path);return {tool:action.tool,path:action.path,sha256:file.sha256,...await lab.open(file.content)};
+ }
+ const commands={'preview.read':'read','preview.click':'click','preview.fill':'fill'};
+ if(!commands[action.tool])throw new Error('Strumento laboratorio sconosciuto');
+ return {tool:action.tool,...await lab.action(commands[action.tool],action)};
+}
+async function demoExecutorLab(){
+ $('btnLabDemo').disabled=true;
+ try{
+  const lab=getExecutorLab();
+  const files={'math.cjs':'exports.add=(a,b)=>a+b;', 'math.test.cjs':`const test=require('node:test');const assert=require('node:assert/strict');const {add}=require('./math.cjs');test('somma',()=>assert.equal(add(2,3),5));test('negativi',()=>assert.equal(add(-2,1),-1));`};
+  const good=await lab.test(files,'math.test.cjs');
+  const bad=await lab.test({...files,'math.cjs':'exports.add=(a,b)=>a-b;'},'math.test.cjs');
+  const timeout=await lab.test({'loop.test.cjs':'while(true){}'},'loop.test.cjs');
+  const escape=await lab.test({'network.test.cjs':`const test=require('node:test');const assert=require('node:assert/strict');test('nessun accesso Node al PC',()=>assert.throws(()=>require('node:fs')));test('rete bloccata',async()=>{await assert.rejects(()=>fetch('https://example.com/'));});`},'network.test.cjs');
+  await lab.open(`<label>Nome <input id="nome"></label><button id="saluta" onclick="document.getElementById('risultato').textContent='Ciao '+document.getElementById('nome').value">Saluta</button><p id="risultato"></p>`);
+  await lab.action('fill',{selector:'#nome',value:'Stefano'});
+  const clicked=await lab.action('click',{selector:'#saluta'});
+  const passed=good.passed===true&&bad.passed===false&&timeout.timed_out===true&&escape.passed===true&&clicked.text.includes('Ciao Stefano');
+  add('assistant','Collaudo laboratorio: '+(passed?'SUPERATO':'DA VERIFICARE')+'\n'+JSON.stringify({test_corretti:good,test_difettosi:bad,limite_tempo:timeout,isolamento:escape,browser:clicked},null,2));
+  addDownload({name:'collaudo_laboratorio.json',content:JSON.stringify({passed,good,bad,timeout,escape,browser:clicked},null,2)});
+  setStatus('Collaudo laboratorio '+(passed?'superato.':'da verificare.'),!passed);
+ }catch(e){setStatus('Laboratorio: '+(e?.message||String(e)),true);}
+ finally{$('btnLabDemo').disabled=false;}
+}
+
 let executorSession=null,executorStop=false;
 async function localExecutor(route,data={}){
  const response=await fetch('http://127.0.0.1:8787'+route,{method:'POST',headers:{'Content-Type':'application/json',...(executorSession?{'Authorization':'Bearer '+executorSession.token}:{})},body:JSON.stringify(data),signal:AbortSignal.timeout(30000)});
@@ -992,17 +1045,18 @@ async function runConnectedExecutor(text,files,wait){
   for(let i=0;i<12;i++){
    if(executorStop||Date.now()-start>300000)break;
    setAutoJobStatus('Esecutore: passo '+(i+1)+'/12.');
-   const next=await api('executor_step',{message:text,tools:executorSession.tools,observations});
+   const next=await api('executor_step',{message:text,tools:[...executorSession.tools,...(typeof StefanoLab!=='undefined'?LAB_TOOLS:[])],observations});
    if(next.status!=='tool'){wait.remove();add('assistant',next.message);setStatus(next.status==='done'?'Esecuzione locale completata.':'Esecuzione locale: collegamento o intervento necessario.',next.status!=='done');return;}
    if(executorStop)break;
    setAutoJobStatus('Esecutore: '+next.message);
    try{
-    const executed=await localExecutor('/execute',{action:next.action});
+    const executed=LAB_TOOLS.includes(next.action.tool)?{result:await executeLabTool(next.action)}:await localExecutor('/execute',{action:next.action});
     const result={...executed.result};
     if(next.action.tool==='files.write'&&result.verified)addDownload({name:next.action.path,content:next.action.content});
     if(result.image){const img=document.createElement('img');img.src=result.image;img.style.maxWidth='100%';img.alt='Screenshot verificato dall’esecutore';chat.appendChild(img);delete result.image;result.screenshot_captured=true;}
     observations.push({action:{tool:next.action.tool,path:next.action.path,url:next.action.url},result});
-    add('assistant','Passo '+(i+1)+': '+next.action.tool+(next.action.path?' — '+next.action.path:'')+' completato.');
+    add('assistant','Passo '+(i+1)+': '+next.action.tool+(next.action.path?' — '+next.action.path:'')+(result.passed===false||result.error?' — verifica non superata.':' completato.'));
+    if(next.action.tool==='javascript.test')addDownload({name:'esito_test_javascript.json',content:JSON.stringify(result,null,2)});
    }catch(e){observations.push({action:{tool:next.action.tool,path:next.action.path},error:e?.message||String(e)});}
   }
   wait.remove();add('assistant',executorStop?'Esecuzione fermata. I passi completati sono conservati.':'Raggiunto il limite di 12 passi o 5 minuti. Il lavoro non è dichiarato completato.');
@@ -1137,7 +1191,7 @@ async function showRouterStatus(){
    const j=await api('router_status');
    const f=j.freellmapi||{};
    const o=j.openrouter||{};
-   let msg='AI ROUTER FULL 2.14 EXECUTOR\n\n';
+   let msg='AI ROUTER FULL 2.15 TEST LAB\n\n';
    msg+=`FreeLLMAPI: ${f.configured?'configurato':'non configurato'}\n`;
    if(f.configured){
      msg+=`Connessione: ${f.reachable===true?'OK':f.reachable===false?'NON RAGGIUNGIBILE':'non verificata'}\n`;
@@ -1248,6 +1302,8 @@ function bindUI(){
   safeBind('btnAgents','click',showAgentsCatalog);
   safeBind('btnAutoRuns','click',showAutoRuns);
   safeBind('btnSelfAudit','click',runSelfAudit);
+  safeBind('btnLabDemo','click',demoExecutorLab);
+  safeBind('btnCloseLab','click',()=>{executorLab?.close();$('executorLabPanel').classList.add('hidden');});
   safeBind('btnExecutorPreview','click',previewExecutor);
   safeBind('btnExecutorConnect','click',connectExecutor);
   safeBind('btnExecutorDisconnect','click',disconnectExecutor);
@@ -1277,7 +1333,7 @@ function bindUI(){
     }
   });
 
-  setStatus('Interfaccia FULL 2.14 EXECUTOR pronta.');
+  setStatus('Interfaccia FULL 2.15 TEST LAB pronta.');
 }
 
 document.addEventListener('DOMContentLoaded', async ()=>{
