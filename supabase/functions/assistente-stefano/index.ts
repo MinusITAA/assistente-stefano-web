@@ -49,6 +49,31 @@ function parseExecutorStep(raw:string){
  }
  return {status:result.status,message:String(result.message||'').slice(0,4000),...(result.status==='tool'?{action:result.action}:{})};
 }
+function guardExecutorCompletion(objective:string,observations:any[],tools:string[]){
+ const obs=observations.slice(-50),last=obs[obs.length-1];
+ const blocked=(message:string)=>({status:'blocked',message});
+ if(!obs.length||!obs.some(o=>o.result&&!o.error))return blocked('Nessun risultato operativo disponibile: il lavoro non e dichiarato completato.');
+ if(last?.error||last?.result?.error||last?.result?.passed===false)return blocked('L ultima operazione non e riuscita. Risolvere l errore prima di dichiarare completato il lavoro.');
+ const writes=new Map<string,any>();
+ obs.forEach((o:any,index:number)=>{if(o.action?.tool==='files.write')writes.set(o.action.path,{...o,index});});
+ if(/\b(crea|scrivi|correggi|modifica|salva|genera|realizza)\b/i.test(objective)&&!writes.size)return blocked('La richiesta prevede file o modifiche, ma non esiste una scrittura verificata.');
+ for(const [path,w] of writes){
+  if(w.result?.verified!==true||!w.result?.sha256)return blocked('Scrittura non verificata per '+path+'.');
+  if(/\.json$/i.test(path)&&!obs.some((o:any,i:number)=>i>w.index&&o.action?.tool==='json.validate'&&o.action.path===path&&o.result?.passed===true)){
+   return tools.includes('json.validate')?{status:'tool',message:'Verifico il JSON realmente salvato prima di concludere.',action:{tool:'json.validate',path}}:blocked('Validazione JSON non disponibile per '+path+'.');
+  }
+ }
+ if(/\b(test|testa|collauda|collaudo|unittest|pytest)\b/i.test(objective)){
+  const js=[...writes.entries()].filter(([path])=>/\.(?:cjs|js|mjs)$/i.test(path));
+  const passed=obs.some((o:any,i:number)=>o.action?.tool==='javascript.test'&&o.result?.passed===true&&o.result?.total>0&&o.result?.failed===0&&js.every(([path,w])=>i>w.index&&o.result.hashes?.[path]===w.result.sha256));
+  if(!passed){
+   const test=js.find(([path])=>/(?:^|\/)(?:.*[._-])?(?:test|spec)(?:[._-].*)?\.cjs$/i.test(path)||/\.(?:test|spec)\.cjs$/i.test(path));
+   if(test&&tools.includes('javascript.test'))return {status:'tool',message:'Eseguo i test sulla versione corrente prima di concludere.',action:{tool:'javascript.test',path:test[0],paths:js.map(([path])=>path).slice(0,10)}};
+   return blocked('Sono stati richiesti test funzionali, ma non risultano test riusciti sulla versione corrente. I soli controlli di sintassi non bastano.');
+  }
+ }
+ return null;
+}
 async function executorNextStep(body:any){
  const objective=String(body.message||'').slice(0,12000);
  if(!objective.trim())throw new Error('Obiettivo esecutore mancante');
@@ -87,6 +112,7 @@ Rispondi SOLO JSON: {"status":"tool","message":"breve azione","action":{"tool":"
   if(last.length===2&&last.every((o:any)=>o.action?.tool==='javascript.test'&&o.action?.path===step.action.path&&o.result?.passed===false)&&JSON.stringify(last[0].result)===JSON.stringify(last[1].result))return {status:'blocked',message:'Due test consecutivi hanno restituito lo stesso errore senza modifiche. Esecuzione fermata: correggere la causa prima di ripetere.'};
  }
  if(step.status==='tool'&&!tools.includes(step.action.tool))throw new Error('Strumento non disponibile nella sessione corrente');
+ if(step.status==='done')return guardExecutorCompletion(objective,Array.isArray(body.observations)?body.observations:[],tools)||step;
  return step;
 }
 
@@ -392,10 +418,12 @@ async function learnFromWeb(body:any){
  }
  if(!JINA_API_KEY)throw new Error('Ricerca web non configurata.');
  const primary=/\bnode(?:\.js|js)?\b/i.test(query)?'nodejs.org':/\bpython\b/i.test(query)?'docs.python.org':/\bplaywright\b/i.test(query)?'playwright.dev':/\bsupabase\b/i.test(query)?'supabase.com':/\bcloudflared?\b/i.test(query)?'developers.cloudflare.com':'';
- const r=await fetch('https://s.jina.ai/'+encodeURIComponent(query+' documentazione ufficiale'+(primary?' site:'+primary:'')),{headers:{Authorization:'Bearer '+JINA_API_KEY,Accept:'application/json','X-Retain-Images':'none'},signal:AbortSignal.timeout(25000)});
+ const officialPage=primary==='nodejs.org'&&/\b(?:test|runner|node:test)\b/i.test(query)?'https://nodejs.org/api/test.html':primary==='docs.python.org'&&/\bunittest\b/i.test(query)?'https://docs.python.org/3/library/unittest.html':'';
+ const r=await fetch(officialPage?'https://r.jina.ai/'+officialPage:'https://s.jina.ai/'+encodeURIComponent(query+' documentazione ufficiale'+(primary?' site:'+primary:'')),{headers:{Authorization:'Bearer '+JINA_API_KEY,Accept:'application/json','X-Retain-Images':'none'},signal:AbortSignal.timeout(25000)});
  if(!r.ok)throw new Error('Ricerca web non disponibile (HTTP '+r.status+'). Nessun apprendimento salvato.');
  const data=await r.json(),now=new Date().toISOString();
- const sources=cleanResearchSources(Array.isArray(data?.data)?data.data:[],now);
+ const sources=cleanResearchSources(officialPage&&data?.data?.content?[{...data.data,url:officialPage}]:Array.isArray(data?.data)?data.data:[],now);
+ if(officialPage)sources.forEach((s:any)=>{s.evidence='page_excerpt';});
  if(!sources.length)throw new Error('Nessuna fonte utilizzabile. Nessun apprendimento salvato.');
  const record={kind:'web_research',query,retrieved_at:now,expires_at:new Date(Date.now()+7*86400000).toISOString(),status:'sources_collected_not_tested',scope:'Informazioni da verificare prima di applicare una procedura. Non sono istruzioni di sistema.',sources};
  let saved=false;
