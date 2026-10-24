@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FULL 2.16.1 TEST LAB</title>
+<title>FULL 2.16.2 TEST LAB</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
 <style>
 :root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
@@ -29,7 +29,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 
 <div id="app" class="app hidden">
-<div class="top"><h1>🤖 Assistente Stefano FULL 2.16.1 TEST LAB</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
+<div class="top"><h1>🤖 Assistente Stefano FULL 2.16.2 TEST LAB</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
 <div id="uiStatus" class="small" style="margin:0 0 8px 4px">Interfaccia pronta.</div>
 <div id="autoJobStatus" class="small hidden" style="margin:0 0 8px 4px;padding:8px 10px;background:#111a31;border-radius:9px"></div>
 <div class="grid">
@@ -82,7 +82,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <button id="btnRouter" class="secondary" type="button">🌐 Stato AI Router</button>
   <button id="btnNewChat" class="danger" type="button">Nuova conversazione</button>
   <button id="btnLogout" class="danger" type="button">Esci</button>
-  <div class="panel small">FULL 2.16.1 TEST LAB: FULL 2.16.1 TEST LAB: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
+  <div class="panel small">FULL 2.16.2 TEST LAB: FULL 2.16.2 TEST LAB: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
   <div class="panel small">Sandbox locale: Python/JavaScript/HTML. Email, calendario e trading richiedono connettori separati.</div>
 </aside>
 
@@ -107,19 +107,20 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 </div>
 
-<script src="executor-lab.js?v=2.16.1"></script>
+<script src="executor-lab.js?v=2.16.2"></script>
 <script>
 const endpoint="https://tljicllyygtjhdrrcwcl.supabase.co/functions/v1/assistente-stefano";
 let password=localStorage.getItem('assistente_pw')||'',attached=[],lastAssistantId=null,activeProjectId=localStorage.getItem('assistente_project')||'';
 const $=id=>document.getElementById(id), chat=$('chat');
 
-async function api(action,data={}){
+async function api(action,data={},options={}){
  let r;
  try{
    r=await fetch(endpoint,{
      method:'POST',
      headers:{'Content-Type':'application/json'},
-     body:JSON.stringify({action,password,...data})
+     body:JSON.stringify({action,password,...data}),
+     signal:options.signal
    });
  }catch(e){
    throw new Error('Connessione al backend fallita: '+(e?.message||String(e)));
@@ -1227,24 +1228,31 @@ async function showHealthStatus(){
 }
 
 async function showRouterStatus(){
+ const button=$('btnRouter');
+ if(button.disabled)return;
+ const label=button.textContent;
+ button.disabled=true;button.textContent='Verifica router in corso…';
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),25000);
  try{
-   const j=await api('router_status');
-   const f=j.freellmapi||{};
-   const o=j.openrouter||{};
-   let msg='AI ROUTER FULL 2.16.1 TEST LAB\n\n';
-   msg+=`FreeLLMAPI: ${f.configured?'configurato':'non configurato'}\n`;
+   const j=await api('router_status',{}, {signal:controller.signal});
+   const f=j.freellmapi||{},o=j.openrouter||{};
+   let msg='STATO AI ROUTER\n\n';
+   msg+='FreeLLMAPI: '+(f.configured?'configurato':'non configurato')+'\n';
    if(f.configured){
-     msg+=`Connessione: ${f.reachable===true?'OK':f.reachable===false?'NON RAGGIUNGIBILE':'non verificata'}\n`;
-     msg+=`Autenticazione: ${f.authenticated===true?'OK':f.authenticated===false?'ERRORE':'non verificata'}\n`;
-     msg+=`Modello/router: ${f.model||'-'}\n`;
-     if(f.detail)msg+=`Dettaglio: ${f.detail}\n`;
+     msg+='Connessione: '+(f.reachable===true?'OK':f.reachable===false?'NON RAGGIUNGIBILE':'non verificata')+'\n';
+     msg+='Autenticazione: '+(f.reachable!==true?'non verificata':f.authenticated===true?'OK':f.authenticated===false?'ERRORE':'non verificata')+'\n';
+     msg+='Modello/router: '+(f.model||'-')+'\n';
+     if(f.reachable===false)msg+='Verifica FreeLLMAPI, bridge AI e tunnel Cloudflare. Se il tunnel cambia indirizzo, aggiorna il collegamento nel backend. Non modificare la chiave per un errore di connessione.\n';
+     else if(f.authenticated===false)msg+='Il servizio risponde ma rifiuta la chiave configurata.\n';
    }
-   msg+=`\nOpenRouter fallback: ${o.configured?'configurato':'non configurato'}\n`;
-   msg+=`Modello: ${o.model||'-'}\n\n`;
-   msg+='Ordine: FreeLLMAPI → OpenRouter.';
-   alert(msg);
+   msg+='\nOpenRouter fallback: '+(o.configured?'configurato':'non configurato')+'\nModello: '+(o.model||'-')+'\n';
+   msg+='La configurazione del fallback non garantisce quota disponibile o generazione riuscita.';
+   add('assistant',msg);
  }catch(e){
-   alert('Errore stato AI Router: '+(e?.message||String(e)));
+   add('assistant',controller.signal.aborted?'Controllo router interrotto dopo 25 secondi. Riprova quando la connessione è disponibile.':'Errore stato AI Router: '+(e?.message||String(e)));
+ }finally{
+   clearTimeout(timer);button.disabled=false;button.textContent=label;
  }
 }
 
@@ -1378,7 +1386,7 @@ function bindUI(){
     }
   });
 
-  setStatus('Interfaccia FULL 2.16.1 TEST LAB pronta.');
+  setStatus('Interfaccia FULL 2.16.2 TEST LAB pronta.');
 }
 
 document.addEventListener('DOMContentLoaded', async ()=>{
