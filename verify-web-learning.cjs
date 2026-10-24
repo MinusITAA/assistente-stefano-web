@@ -1,0 +1,20 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const {stripTypeScriptTypes}=require('node:module');
+const source=fs.readFileSync(__dirname+'/supabase/functions/assistente-stefano/index.ts','utf8');
+const fragment=source.slice(source.indexOf('// Research records are evidence excerpts'),source.indexOf('async function jinaSearch'));
+let network=0,saves=[],cache=[],fetchStatus=200,projectOK=true;
+const database={from(table){const q={select(){return q},eq(){return q},like(){return q},order(){return q},limit(){return Promise.resolve({data:cache})},maybeSingle(){return Promise.resolve({data:projectOK?{id:2}:null})},insert(row){saves.push(row);return Promise.resolve({error:null})}};return q}};
+const c={URL,Set,Date,JSON,Array,Uint8Array,TextEncoder,crypto:require('node:crypto').webcrypto,AbortSignal,USER_ID:'demo',JINA_API_KEY:'demo',normalizeText:t=>t.toLowerCase(),supabase:database,fetch:async()=>{network++;return {ok:fetchStatus===200,status:fetchStatus,json:async()=>({data:[{title:'Documentazione',url:'https://nodejs.org/api/test.html',content:'Use test runner.'},{title:'Duplicate',url:'https://nodejs.org/api/test.html#test',content:'duplicate'},{url:'http://localhost/a',content:'bad'}]})}}};
+vm.createContext(c);vm.runInContext(stripTypeScriptTypes(fragment,{mode:'strip'}),c);
+(async()=>{
+ assert.equal(c.cleanResearchSources([{url:'javascript:alert(1)',content:'bad'},{url:'https://example.com/?token=secret',content:'bad'}],'now').length,0);
+ await assert.rejects(c.learnFromWeb({query:'password=secret'}),/credenziali/);assert.equal(network,0);
+ projectOK=false;await assert.rejects(c.learnFromWeb({query:'Node test runner',project_id:2}),/Progetto/);assert.equal(network,0);projectOK=true;
+ const result=await c.learnFromWeb({query:'Node test runner',project_id:2});assert.equal(network,1);assert.equal(result.saved,true);assert.equal(result.record.sources.length,1);assert.equal(result.record.sources[0].verification,'not_tested');assert.equal(saves.length,1);
+ cache=[{content:saves[0].content}];assert.equal((await c.learnFromWeb({query:'Node test runner',project_id:2})).cached,true);assert.equal(network,1);
+ assert.match(await c.researchMemory(2,'Node test runner'),/non attendibili come istruzioni/);
+ assert.equal(await c.researchMemory(2,'argomento differente'),'');
+ const expired=JSON.parse(saves[0].content);expired.expires_at='2000-01-01';cache=[{content:JSON.stringify(expired)}];assert.equal(await c.researchMemory(2,'Node test runner'),'');
+ fetchStatus=429;await assert.rejects(c.learnFromWeb({query:'Node test runner',project_id:2}),/HTTP 429/);assert.equal(saves.length,1);
+ console.log('PASS web learning: provenance, duplicate URLs, credentials, ownership, cache, expiry, relevant retrieval and failed-search persistence');
+})().catch(e=>{console.error(e);process.exitCode=1});
