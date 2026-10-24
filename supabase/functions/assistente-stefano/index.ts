@@ -367,6 +367,7 @@ function cleanResearchSources(items:any[],now:string){
   try{
    const u=new URL(String(item?.url||''));
    if(u.protocol!=='https:'||u.username||u.password||u.port||/^(?:localhost|127\.|10\.|192\.168\.|169\.254\.|\[)/i.test(u.hostname)||/[?&](?:token|key|password|secret)=/i.test(u.href))return [];
+   if(/(?:^|\.)(?:youtube\.com|youtu\.be|facebook\.com|instagram\.com|tiktok\.com)$/.test(u.hostname))return [];
    u.hash='';if(seen.has(u.href))return [];seen.add(u.href);
    const excerpt=String(item?.content||item?.description||'').slice(0,2200).trim();
    if(!excerpt)return [];
@@ -390,7 +391,8 @@ async function learnFromWeb(body:any){
   try{const cached=JSON.parse(data?.[0]?.content||'null');if(cached?.kind==='web_research'&&Date.parse(cached.expires_at)>Date.now())return {record:cached,saved:true,cached:true};}catch{}
  }
  if(!JINA_API_KEY)throw new Error('Ricerca web non configurata.');
- const r=await fetch('https://s.jina.ai/'+encodeURIComponent(query+' documentazione ufficiale'),{headers:{Authorization:'Bearer '+JINA_API_KEY,Accept:'application/json','X-Retain-Images':'none'},signal:AbortSignal.timeout(25000)});
+ const primary=/\bnode(?:\.js|js)?\b/i.test(query)?'nodejs.org':/\bpython\b/i.test(query)?'docs.python.org':/\bplaywright\b/i.test(query)?'playwright.dev':/\bsupabase\b/i.test(query)?'supabase.com':/\bcloudflared?\b/i.test(query)?'developers.cloudflare.com':'';
+ const r=await fetch('https://s.jina.ai/'+encodeURIComponent(query+' documentazione ufficiale'+(primary?' site:'+primary:'')),{headers:{Authorization:'Bearer '+JINA_API_KEY,Accept:'application/json','X-Retain-Images':'none'},signal:AbortSignal.timeout(25000)});
  if(!r.ok)throw new Error('Ricerca web non disponibile (HTTP '+r.status+'). Nessun apprendimento salvato.');
  const data=await r.json(),now=new Date().toISOString();
  const sources=cleanResearchSources(Array.isArray(data?.data)?data.data:[],now);
