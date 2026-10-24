@@ -1,5 +1,9 @@
 # Esecutore locale di Assistente Stefano
 
+Aggiornamento 0.1.2: decodifica UTF-8 dopo aver raccolto tutti i pacchetti HTTP, per conservare euro, accenti ed emoji nei file. Input UTF-8 non valido e richieste oltre 280.000 byte vengono rifiutati prima di scrivere. Porta e permessi restano quelli di 0.1.1. Questa versione del programma locale richiede aggiornamento e riavvio sul PC; la pubblicazione dello ZIP non aggiorna un processo gia in esecuzione.
+
+I sorgenti dell'esecutore sono disponibili nella cartella `executor`. Eseguire `node verify-all.cjs` dalla radice per i controlli automatici. La pipeline Regression checks esegue la stessa suite su Windows e Linux senza chiavi API; non sostituisce il collaudo del sito e del programma installato.
+
 Aggiornamento 0.1.1: porta 8788 per evitare il conflitto con il bridge FreeLLMAPI storico sulla 8787. Il sito mantiene la scelta 8787 per compatibilita con la versione precedente. Non esporre mai l'esecutore con Cloudflare Tunnel: il bridge AI e l'esecutore sono servizi distinti. Per aggiornare, estrarre i file del nuovo ZIP nella cartella del programma senza eliminare `workspace`, `.history` o `config.json`, arrestare la vecchia console e riavviare `Start-Executor.cmd`. Chiavi e impostazioni esistenti non vengono riscritte.
 
 Stato: implementazione preparata, non attiva. L'attivazione amplia l'accesso dell'agente al PC e richiede un'approvazione specifica del proprietario. Non vengono cambiate chiavi, password o Secrets Supabase.

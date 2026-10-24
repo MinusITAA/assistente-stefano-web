@@ -1,0 +1,8 @@
+{
+  "origin": "https://minusitaa.github.io",
+  "workspace": "./workspace",
+  "enableBrowser": false,
+  "browserOrigins": [
+    "https://minusitaa.github.io"
+  ]
+}
