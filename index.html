@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FULL 2.18 TEST LAB</title>
+<title>FULL 2.18.1 TEST LAB</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
 <style>
 :root{--bg:#0b1020;--p:#121a30;--p2:#19233d;--t:#f3f6ff;--m:#9eabc9;--a:#7c9cff;--g:#174b34}
@@ -29,7 +29,7 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
 </div>
 
 <div id="app" class="app hidden">
-<div class="top"><h1>🤖 Assistente Stefano FULL 2.18 TEST LAB</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
+<div class="top"><h1>🤖 Assistente Stefano FULL 2.18.1 TEST LAB</h1><div class="badge">FreeLLMAPI • AI Router • Autonomous Jobs • multi-agent • sandbox</div></div>
 <div id="uiStatus" class="small" style="margin:0 0 8px 4px">Interfaccia pronta.</div>
 <div id="autoJobStatus" class="small hidden" style="margin:0 0 8px 4px;padding:8px 10px;background:#111a31;border-radius:9px"></div>
 <div class="grid">
@@ -79,12 +79,14 @@ a.dl{display:inline-block;margin-top:7px;background:var(--g);color:#fff;text-dec
   <button id="btnSelfAudit" class="secondary" type="button">🧪 Auto-audit</button>
   <button id="btnImprovements" class="secondary" type="button">🛠 Proposte miglioramento</button>
   <button id="btnHealth" class="secondary" type="button">🩺 Stato sistema</button>
+  <label for="webTopic" class="small">Argomento da ricercare e conservare</label>
+  <input id="webTopic" type="text" maxlength="600" placeholder="Es. test JavaScript con Node.js">
   <button id="btnWebLearn" class="secondary" type="button">🌐 Ricerca e memoria web</button>
   <button id="btnWebRefresh" class="secondary" type="button">Aggiorna fonti web</button>
   <button id="btnRouter" class="secondary" type="button">🌐 Stato AI Router</button>
   <button id="btnNewChat" class="danger" type="button">Nuova conversazione</button>
   <button id="btnLogout" class="danger" type="button">Esci</button>
-  <div class="panel small">FULL 2.18 TEST LAB: FULL 2.18 TEST LAB: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
+  <div class="panel small">FULL 2.18.1 TEST LAB: FULL 2.18.1 TEST LAB: Autonomous Jobs separati, sandbox, memoria progetto e generazione multi-file consolidate.</div>
   <div class="panel small">Sandbox locale: Python/JavaScript/HTML. Email, calendario e trading richiedono connettori separati.</div>
 </aside>
 
@@ -1233,17 +1235,20 @@ async function showHealthStatus(){
 }
 
 async function learnWebTopic(topic,refresh=false){
- const query=topic||prompt('Quale argomento deve ricercare e conservare?');
- if(!query?.trim())return;
+ const query=topic||$('webTopic').value;
+ if(!query?.trim()){setStatus('Scrivi un argomento nel campo Ricerca e memoria web.',true);$('webTopic').focus();return;}
+ $('webTopic').value=query;
  const button=$('btnWebLearn');if(button.disabled)return;
  button.disabled=true;const label=button.textContent;button.textContent='Ricerca fonti in corso…';
+ const refreshButton=$('btnWebRefresh');refreshButton.disabled=true;
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),40000);
  try{
-  const j=await api('web_learn',{query,refresh,project_id:activeProjectId||$('project').value||null});
+  const j=await api('web_learn',{query,refresh,project_id:activeProjectId||$('project').value||null},{signal:controller.signal});
   const r=j.record;
   add('assistant',(j.cached?'Ricerca recente riutilizzata':'Ricerca web completata')+'\n'+r.query+'\n'+(j.saved?'Salvata nella libreria del progetto.':'Nessun progetto selezionato: ricerca non memorizzata.')+'\nFonti raccolte il '+r.retrieved_at+'; da aggiornare entro '+r.expires_at+'.\nQuesti sono estratti web, non procedure eseguite o verificate.\n\n'+r.sources.map((s,i)=>(i+1)+'. '+s.title+'\n'+s.url+'\n'+s.excerpt).join('\n\n'));
   addDownload({name:'ricerca_web.json',content:JSON.stringify(r,null,2)});
- }catch(e){add('assistant','Ricerca web: '+(e?.message||String(e)));}
- finally{button.disabled=false;button.textContent=label;}
+ }catch(e){add('assistant',controller.signal.aborted?'Ricerca interrotta dopo 40 secondi. Riprova: eventuali fonti gia salvate saranno recuperate.':'Ricerca web: '+(e?.message||String(e)));}
+ finally{clearTimeout(timer);button.disabled=false;refreshButton.disabled=false;button.textContent=label;}
 }
 
 async function showRouterStatus(){
@@ -1407,7 +1412,7 @@ function bindUI(){
     }
   });
 
-  setStatus('Interfaccia FULL 2.18 TEST LAB pronta.');
+  setStatus('Interfaccia FULL 2.18.1 TEST LAB pronta.');
 }
 
 document.addEventListener('DOMContentLoaded', async ()=>{
