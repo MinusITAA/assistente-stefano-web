@@ -23,6 +23,12 @@ assert(plain.includes('Scanner &lt;script&gt;'));
 assert(!plain.includes('gs-scanner'));
 const photo = ctx.graphicsStudioRenderHTML({title:'Resina',product_images:[{dataUrl:'data:image/png;base64,AAAA'}]});
 assert(photo.includes('src="data:image/png;base64,AAAA"'));
+assert(photo.includes('class="page photo-editorial"'));
+const dense = ctx.graphicsStudioRenderHTML({title:'Prodotto',subtitle:'Dettagli '.repeat(60),product_images:[{dataUrl:'data:image/png;base64,AAAA'}]});
+assert(!dense.includes('class="page photo-editorial"'));
+const gallery = ctx.graphicsStudioRenderHTML({title:'Prodotti',product_images:[{dataUrl:'data:image/png;base64,AAAA'},{dataUrl:'data:image/png;base64,BBBB'}]});
+assert(!gallery.includes('class="page photo-editorial"'));
+assert(plain.includes('class="page no-photo"'));
 const unsafe = ctx.graphicsStudioRenderHTML({title:'Resina',product_images:[{dataUrl:'javascript:alert(1)'}]});
 assert(!unsafe.includes('javascript:'));
 assert.equal(ctx.gsSafeFeatureText('Mascherine FFP2 con filtrazione 99% certificata CE','Mascherine FFP2, 45 pezzi, 10 euro'), '');
@@ -32,4 +38,4 @@ assert.equal(ctx.gsSafeFeatureText('Filtrazione 99%','FFP2. Filtrazione 99% cert
 for (const id of ['btnSend','btnLibrary','btnTasks','btnMemories','btnAgents','btnHealth','project','file']) assert(html.includes('id="'+id+'"'));
 assert(html.includes('scale:300/96'));
 assert(html.includes("out.push('png','pdf')"));
-console.log('PASS: frontend/backend syntax; 24 graphics assertions. Live browser tests are required separately.');
+console.log('PASS: frontend/backend syntax; graphics facts, escaping, photo composition, gallery and text-only regressions. Live browser tests are required separately.');
