@@ -7,6 +7,22 @@ import {createEngine} from './engine.mjs';
 import {createHandler} from './server.mjs';
 import {allowedURL,redact} from './policy.mjs';
 
+test('JSON credentials are redacted without modifying files on disk',async t=>{
+ const config=await fixture(t),engine=await createEngine(config);
+ const data={password:'demo-password-123',token:'demo-token-123',title:'Ordinary title'};
+ const content=JSON.stringify(data);
+ await engine.execute({tool:'files.write',path:'demo.json',content});
+ const result=await engine.execute({tool:'files.read',path:'demo.json'});
+ assert(!result.content.includes(data.password));
+ assert(!result.content.includes(data.token));
+ assert(result.content.includes(data.title));
+ assert.equal(await fs.readFile(path.join(config.workspace,'demo.json'),'utf8'),content);
+ for(const key of ['password','token','secret','api_key','api-key','service_role_key']){
+  for(const source of [`${key}="demo-value-123"`,`"${key}":"demo-value-123"`,`'${key}': 'demo-value-123'`])
+   assert(!redact(source).includes('demo-value-123'),source);
+ }
+});
+
 async function fixture(t){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'stefano-executor-test-'));
  t.after(()=>fs.rm(root,{recursive:true,force:true}));
