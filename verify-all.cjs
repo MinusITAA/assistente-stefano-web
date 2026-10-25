@@ -3,7 +3,7 @@ const suites=[
  'verify-autonomy.cjs','verify-completion.cjs','verify-executor.cjs',
  'verify-executor-port.cjs','verify-graphics.cjs','verify-lab.cjs',
  'verify-router-status.cjs','verify-security.cjs','verify-web-learning.cjs',
- 'verify-web-learning-ui.cjs','verify-web-search.cjs'
+ 'verify-web-learning-ui.cjs','verify-web-search.cjs','verify-learning-evidence.cjs'
 ];
 for(const suite of [...suites,['--test','executor/executor.test.mjs']]){
  const args=Array.isArray(suite)?suite:[suite];
