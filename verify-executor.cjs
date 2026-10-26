@@ -17,5 +17,9 @@ const blocked=await c.executorNextStep({message:'test',tools:['javascript.test']
 const unsafe={...observation,result:{passed:false,error:'File/modulo mancante: ../secret.cjs'}};
 const guarded=await c.executorNextStep({message:'test',tools:['javascript.test'],observations:[unsafe]});assert(!guarded.action.paths.includes('../secret.cjs'));
 const h=fs.readFileSync(path.join(root,'index.html'),'utf8');assert(h.includes('http://127.0.0.1:8787'));assert(!h.includes("localStorage.setItem('executor"));assert(h.includes('i<12'));assert(h.includes('executorStop'));assert(h.includes("if($('useExecutor').checked)"));
-console.log('PASS executor planner: strict tool envelope, capability filtering, malformed output rejection, bounded frontend loop and memory-only session');
+const messages=[];let calls=0;const loopContext={executorSession:{expires:Date.now()+60000,tools:['files.list']},executorStop:false,activeProjectId:'demo',LAB_TOOLS:[],Date,localStorage:{},$:()=>({value:'demo'}),setAutoJobStatus:()=>{},setStatus:()=>{},add:(_,m)=>messages.push(m),api:async()=>({status:'tool',message:'leggo',action:{tool:'files.list',path:''}}),localExecutor:async()=>{calls++;throw new Error('Servizio locale non raggiungibile');}};
+vm.createContext(loopContext);vm.runInContext(h.slice(h.indexOf('async function runConnectedExecutor('),h.indexOf('let sending=false;')),loopContext);
+await loopContext.runConnectedExecutor('Elenca file',[],{remove:()=>{}});
+assert.equal(calls,3);assert(messages.some(m=>m.includes('Servizio locale non raggiungibile')));assert(messages.some(m=>m.includes('senza progressi')));assert(!messages.some(m=>m.includes('limite di 12')));
+console.log('PASS executor planner and real frontend loop: repeated transport errors are visible and stop after three attempts');
 })().catch(e=>{console.error(e);process.exitCode=1});

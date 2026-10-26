@@ -1118,7 +1118,16 @@ async function runConnectedExecutor(text,files,wait){
     observations.push({action:{tool:next.action.tool,path:next.action.path,url:next.action.url},result});
     add('assistant','Passo '+(i+1)+': '+next.action.tool+(next.action.path?' — '+next.action.path:'')+(result.passed===false||result.error?' — verifica non superata.':' completato.'));
     if(next.action.tool==='javascript.test')addDownload({name:'esito_test_javascript.json',content:JSON.stringify(result,null,2)});
-   }catch(e){observations.push({action:{tool:next.action.tool,path:next.action.path},error:e?.message||String(e)});}
+   }catch(e){
+    const error=e?.message||String(e);
+    observations.push({action:{tool:next.action.tool,path:next.action.path},error});
+    add('assistant','Passo '+(i+1)+': '+next.action.tool+' non riuscito: '+error);
+    const repeated=observations.slice(-3);
+    if(repeated.length===3&&repeated.every(o=>o.error===error&&o.action.tool===next.action.tool&&o.action.path===next.action.path)){
+     wait.remove();add('assistant','Esecuzione interrotta: la stessa operazione e fallita tre volte senza progressi. I risultati precedenti sono conservati.');
+     setStatus('Esecutore: errore ripetuto, lavoro non completato.',true);return;
+    }
+   }
   }
   wait.remove();add('assistant',executorStop?'Esecuzione fermata. I passi completati sono conservati.':'Raggiunto il limite di 12 passi o 5 minuti. Il lavoro non è dichiarato completato.');
  }catch(e){wait.remove();add('assistant','Esecutore: '+(e?.message||String(e)));}
