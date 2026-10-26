@@ -55,11 +55,20 @@
   });
   storage.setItem(key,JSON.stringify([record,...records].slice(0,20)));return true;
  }
- function recall(storage,project,now=Date.now()){
+ function list(storage,project,now=Date.now()){
   if(!project)return [];
   try{const records=JSON.parse(storage.getItem('stefano_learning_v1_'+encodeURIComponent(project))||'[]');
-   return Array.isArray(records)?records.filter(r=>Number.isFinite(r?.recorded_at)&&r.recorded_at<=now&&r.expires_at===r.recorded_at+7*86400000&&r.expires_at>now).slice(0,20).map(clean).filter(Boolean).slice(0,2):[];
+   return Array.isArray(records)?records.filter(r=>Number.isFinite(r?.recorded_at)&&r.recorded_at<=now&&r.expires_at===r.recorded_at+7*86400000&&r.expires_at>now).flatMap(r=>{const v=clean(r);return v?[{...v,recorded_at:r.recorded_at,expires_at:r.expires_at}]:[];}).slice(0,20):[];
   }catch{return [];}
  }
- const api={build,save,recall};if(typeof module!=='undefined')module.exports=api;else root.StefanoLearningEvidence=api;
+ function recall(storage,project,now=Date.now()){return list(storage,project,now).slice(0,2).map(clean);}
+ function remove(storage,project,record,now=Date.now()){
+  if(!project||!record)return false;
+  const signature=r=>JSON.stringify([r.recorded_at,Object.entries(r.hashes).sort(([a],[b])=>a<b?-1:a>b?1:0)]);
+  const records=list(storage,project,now),target=clean(record);if(!target)return false;
+  const key=signature({...target,recorded_at:record.recorded_at});
+  const remaining=records.filter(r=>signature(r)!==key);if(remaining.length===records.length)return false;
+  storage.setItem('stefano_learning_v1_'+encodeURIComponent(project),JSON.stringify(remaining));return true;
+ }
+ const api={build,save,recall,list,remove};if(typeof module!=='undefined')module.exports=api;else root.StefanoLearningEvidence=api;
 })(typeof window==='undefined'?this:window);

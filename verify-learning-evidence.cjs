@@ -63,3 +63,13 @@ values.set('stefano_learning_v1_sanitize',JSON.stringify([{...retained,expires_a
 save(storage,'sanitize',twoHashes,101);
 assert.equal(JSON.parse(values.get('stefano_learning_v1_sanitize')).length,1);
 console.log('PASS saved history retains only validated fields and original valid lifetime');
+const memory=require('./learning-evidence.js');
+save(storage,'manage',evidence,100);save(storage,'manage',twoHashes,101);
+const managed=memory.list(storage,'manage',102);
+assert.equal(managed.length,2);assert.equal(managed[0].expires_at,101+7*86400000);
+assert(memory.remove(storage,'manage',managed[0],102));
+assert.equal(memory.list(storage,'manage',103).length,1);
+assert.equal(memory.remove(storage,'project-b',managed[1],103),false);
+assert.equal(memory.list(storage,'manage',103)[0].recorded_at,100);
+assert.equal(memory.remove(storage,'manage',managed[0],103),false);
+console.log('PASS memory inspection and single-record removal preserve project isolation');
