@@ -37,3 +37,7 @@ assert.equal(recall(storage,'malformed',101).length,1);
 assert.equal(save(storage,'absolute',{...evidence,hashes:{'/a.cjs':hash}},100),false);
 assert.equal(save(storage,'empty-segment',{...evidence,hashes:{'dir//a.cjs':hash}},100),false);
 console.log('PASS malformed source entries and workspace-relative hash paths');
+assert.doesNotThrow(()=>build([research,{...test,result:{...test.result,tests:[null]}}]));
+assert.equal(build([research,{...test,result:{...test.result,tests:[null]}}]),null);
+assert.doesNotThrow(()=>build([null,research,test]));
+console.log('PASS malformed observations and null test results cannot interrupt completion');
