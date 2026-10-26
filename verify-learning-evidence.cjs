@@ -46,3 +46,8 @@ assert.equal(build([research,failedWrite,test]),null);
 assert.equal(build([research,failedWrite,write,test]).total,1);
 assert.equal(build({}),null);
 console.log('PASS failed writes require a successful verified rewrite before learning');
+const twoHashes={...evidence,hashes:{'a.cjs':hash,'b.cjs':'b'.repeat(64)}};
+save(storage,'order',twoHashes,100);
+save(storage,'order',{...twoHashes,hashes:{'b.cjs':'b'.repeat(64),'a.cjs':hash}},101);
+assert.equal(recall(storage,'order',102).length,1);
+console.log('PASS hash-map ordering does not duplicate the same learned evidence');

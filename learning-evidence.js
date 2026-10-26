@@ -46,8 +46,9 @@
   let records=[];try{records=JSON.parse(storage.getItem(key)||'[]');}catch{}
   if(!Array.isArray(records))records=[];
   const record={...evidence,recorded_at:now,expires_at:now+7*86400000};
-  const signature=JSON.stringify(record.hashes);
-  records=records.filter(r=>r&&r.expires_at>now&&clean(r)&&JSON.stringify(r.hashes)!==signature);
+  const signatureOf=hashes=>JSON.stringify(Object.entries(hashes).sort(([a],[b])=>a<b?-1:a>b?1:0));
+  const signature=signatureOf(record.hashes);
+  records=records.filter(r=>r&&r.expires_at>now&&clean(r)&&signatureOf(r.hashes)!==signature);
   storage.setItem(key,JSON.stringify([record,...records].slice(0,20)));return true;
  }
  function recall(storage,project,now=Date.now()){
