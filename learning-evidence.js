@@ -16,19 +16,21 @@
   return researches.length?{status:value.status,scope,total:value.total,hashes:Object.fromEntries(entries),researches}:null;
  }
  function build(observations){
-  const researches=[],writes=new Map();let evidence=null;
+  if(!Array.isArray(observations))return null;
+  const researches=[],writes=new Map(),pendingWrites=new Set();let evidence=null;
   for(const o of observations||[]){
    const tool=o?.action?.tool,r=o?.result;
    if(tool==='files.write'||tool==='javascript.test')evidence=null;
+   if(tool==='files.write')pendingWrites.add(o.action.path);
    if(o?.error||!r)continue;
    if(tool==='web.research'&&r.record?.kind==='web_research'&&Array.isArray(r.record.sources)){
     const sources=r.record.sources.filter(s=>{try{const u=new URL(s.url);return u.protocol==='https:'&&!u.username&&!u.password;}catch{return false;}}).map(s=>({url:s.url,retrieved_at:s.retrieved_at}));
     if(sources.length)researches.push({sources});
    }
-   if(tool==='files.write'&&r.verified===true)writes.set(o.action.path,r.sha256);
+   if(tool==='files.write'&&r.verified===true){writes.set(o.action.path,r.sha256);pendingWrites.delete(o.action.path);}
    if(tool==='javascript.test'){
     evidence=null;
-    if(!researches.length||r.passed!==true||!(r.total>0)||r.failed>0||!Array.isArray(r.tests)||r.tests.length!==r.total||!r.tests.every(t=>t?.passed===true))continue;
+    if(pendingWrites.size||!researches.length||r.passed!==true||!(r.total>0)||r.failed>0||!Array.isArray(r.tests)||r.tests.length!==r.total||!r.tests.every(t=>t?.passed===true))continue;
     const hashes=r.hashes||{},paths=Object.keys(hashes);
     if(!paths.length||!paths.every(p=>/^[a-f0-9]{64}$/.test(hashes[p])))continue;
     if([...writes].some(([p,h])=>hashes[p]!==h))continue;

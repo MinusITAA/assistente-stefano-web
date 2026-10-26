@@ -41,3 +41,8 @@ assert.doesNotThrow(()=>build([research,{...test,result:{...test.result,tests:[n
 assert.equal(build([research,{...test,result:{...test.result,tests:[null]}}]),null);
 assert.doesNotThrow(()=>build([null,research,test]));
 console.log('PASS malformed observations and null test results cannot interrupt completion');
+const failedWrite={action:{tool:'files.write',path:'a.cjs'},error:'write failed'};
+assert.equal(build([research,failedWrite,test]),null);
+assert.equal(build([research,failedWrite,write,test]).total,1);
+assert.equal(build({}),null);
+console.log('PASS failed writes require a successful verified rewrite before learning');
