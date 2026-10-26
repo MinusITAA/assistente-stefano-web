@@ -48,7 +48,11 @@
   const record={...evidence,recorded_at:now,expires_at:now+7*86400000};
   const signatureOf=hashes=>JSON.stringify(Object.entries(hashes).sort(([a],[b])=>a<b?-1:a>b?1:0));
   const signature=signatureOf(record.hashes);
-  records=records.filter(r=>r&&r.expires_at>now&&clean(r)&&signatureOf(r.hashes)!==signature);
+  records=records.flatMap(r=>{
+   if(!Number.isFinite(r?.recorded_at)||r.recorded_at>now||r.expires_at!==r.recorded_at+7*86400000||r.expires_at<=now)return [];
+   const validated=clean(r);
+   return validated&&signatureOf(validated.hashes)!==signature?[{...validated,recorded_at:r.recorded_at,expires_at:r.expires_at}]:[];
+  });
   storage.setItem(key,JSON.stringify([record,...records].slice(0,20)));return true;
  }
  function recall(storage,project,now=Date.now()){
