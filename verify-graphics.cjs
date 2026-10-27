@@ -39,3 +39,19 @@ for (const id of ['btnSend','btnLibrary','btnTasks','btnMemories','btnAgents','b
 assert(html.includes('scale:300/96'));
 assert(html.includes("out.push('png','pdf')"));
 console.log('PASS: frontend/backend syntax; graphics facts, escaping, photo composition, gallery and text-only regressions. Live browser tests are required separately.');
+
+// Automatic selection keeps exact product identity, then prefers usable resolution.
+(async()=>{
+ const sizes={A:[500,500],B:[1000,800],C:[2000,2000],D:[50,50],E:[1000,800]};
+ let selected,images=[];
+ class ImageMock{set src(v){const [w,h]=sizes[v.split(',')[1]];this.naturalWidth=w;this.naturalHeight=h;queueMicrotask(()=>this.onload());}}
+ const t={Image:ImageMock,Map,Promise,queueMicrotask,setStatus:()=>{},add:()=>{},api:async()=>({images}),gsShowPhotoSource:x=>{selected=x}};
+ vm.runInNewContext(html.slice(html.indexOf('async function gsFindWebPhoto('),html.indexOf('function gsShowPhotoSource(')),t);
+ const mk=(id,exact)=>({dataUrl:'data:image/png;base64,'+id,exact});
+ images=[mk('A',true),mk('C',false),mk('D',true),mk('B',true),mk('E',true)];
+ assert.equal((await t.gsFindWebPhoto('prodotto',true)).dataUrl,images[3].dataUrl);
+ assert.equal(selected,images[3]);
+ images=[mk('D',true)];assert.equal(await t.gsFindWebPhoto('prodotto',true),null);
+ console.log('PASS: select highest-resolution usable exact photo, preserve ties, ignore unrelated and undersized images');
+})().catch(e=>{console.error(e);process.exitCode=1});
+
