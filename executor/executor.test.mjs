@@ -23,6 +23,27 @@ test('JSON credentials are redacted without modifying files on disk',async t=>{
  }
 });
 
+test('short JSON credentials are masked when files are read',async t=>{
+ const config=await fixture(t),engine=await createEngine(config);
+ const data={password:'p123',token:'abc1234',title:'ordinary'};
+ const content=JSON.stringify(data);
+ await engine.execute({tool:'files.write',path:'short.json',content});
+ const result=await engine.execute({tool:'files.read',path:'short.json'});
+ const parsed=JSON.parse(result.content);
+ assert.equal(parsed.password,'[OMESSO]');assert.equal(parsed.token,'[OMESSO]');
+ assert.equal(parsed.title,data.title);
+ assert.equal(await fs.readFile(path.join(config.workspace,'short.json'),'utf8'),content);
+ for(const key of ['password','token','secret','api_key','api-key','service_role_key'])for(let n=1;n<=8;n++){
+  const input=JSON.stringify({[key]:'x'.repeat(n)});
+  assert.equal(JSON.parse(redact(input))[key],'[OMESSO]');
+ }
+ for(const value of ['a"secret','short\\token',"quote'safe",'', 'riga\nprivata']){
+  const input=JSON.stringify({password:value,title:'ordinary'});
+  const result=JSON.parse(redact(input));
+  assert.equal(result.password,'[OMESSO]');assert.equal(result.title,'ordinary');
+ }
+});
+
 async function fixture(t){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'stefano-executor-test-'));
  t.after(()=>fs.rm(root,{recursive:true,force:true}));

@@ -28,7 +28,7 @@ export async function createHandler(config,{browserFactory,pairCode,onAudit=()=>
       if(req.url==='/pair'){
         if(pairedOnce||Date.now()>pairingUntil||++attempts>5||!equals(body.code,code)){send(403,{error:'Abbinamento non valido o scaduto'});return;}
         token=randomBytes(32).toString('hex');pairedOnce=true;expires=Date.now()+sessionMs;
-        send(200,{token,expires,version:'0.1.3',tools:TOOLS.filter(t=>browserFactory||!t.startsWith('browser.')),workspace:path.basename(engine.root),browserOrigins:config.browserOrigins});return;
+        send(200,{token,expires,version:'0.1.4',tools:TOOLS.filter(t=>browserFactory||!t.startsWith('browser.')),workspace:path.basename(engine.root),browserOrigins:config.browserOrigins});return;
       }
       if(!token||Date.now()>expires||!equals(req.headers.authorization,'Bearer '+token)){send(401,{error:'Sessione non autorizzata o scaduta'});return;}
       if(req.url==='/disconnect'){token=null;expires=0;await engine.close();send(200,{ok:true});return;}

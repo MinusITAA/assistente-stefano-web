@@ -29,7 +29,7 @@ export function allowedURL(value,origins) {
   return u.href;
 }
 export function redact(text) {
-  return String(text).replace(/((?:["']?(?:api[_-]?key|password|secret|token|service_role_key)["']?)\s*[:=]\s*)["'][^"'\n]{8,}["']/gi,'$1"[OMESSO]"')
+  return String(text).replace(/((?:["']?(?:api[_-]?key|password|secret|token|service_role_key)["']?)\s*[:=]\s*)(?:"(?:\\.|[^"\\\r\n])*"|'(?:\\.|[^'\\\r\n])*')/gi,'$1"[OMESSO]"')
     .replace(/\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9_]{20,}|eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\b/g,'[CREDENZIALE OMESSA]');
 }
 export function digest(content){return createHash('sha256').update(content).digest('hex');}
