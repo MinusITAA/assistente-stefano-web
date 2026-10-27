@@ -40,11 +40,15 @@
   }
   return clean(evidence);
  }
+ function hasFutureRecord(records,now){
+  return Array.isArray(records)&&records.some(r=>Number.isFinite(r?.recorded_at)&&r.recorded_at>now&&r.expires_at===r.recorded_at+7*86400000&&!!clean(r));
+ }
  function save(storage,project,evidence,now=Date.now()){
   evidence=clean(evidence);if(!project||!evidence)return false;
   const key='stefano_learning_v1_'+encodeURIComponent(project);
   let records=[];try{records=JSON.parse(storage.getItem(key)||'[]');}catch{}
   if(!Array.isArray(records))records=[];
+  if(hasFutureRecord(records,now))return false;
   const record={...evidence,recorded_at:now,expires_at:now+7*86400000};
   const signatureOf=hashes=>JSON.stringify(Object.entries(hashes).sort(([a],[b])=>a<b?-1:a>b?1:0));
   const signature=signatureOf(record.hashes);
@@ -64,6 +68,7 @@
  function recall(storage,project,now=Date.now()){return list(storage,project,now).slice(0,2).map(clean);}
  function remove(storage,project,record,now=Date.now()){
   if(!project||!record)return false;
+  try{const records=JSON.parse(storage.getItem('stefano_learning_v1_'+encodeURIComponent(project))||'[]');if(hasFutureRecord(records,now))return false;}catch{return false;}
   const signature=r=>JSON.stringify([r.recorded_at,Object.entries(r.hashes).sort(([a],[b])=>a<b?-1:a>b?1:0)]);
   const records=list(storage,project,now),target=clean(record);if(!target)return false;
   const key=signature({...target,recorded_at:record.recorded_at});

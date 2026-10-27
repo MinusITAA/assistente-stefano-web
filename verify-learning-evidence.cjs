@@ -73,3 +73,14 @@ assert.equal(memory.remove(storage,'project-b',managed[1],103),false);
 assert.equal(memory.list(storage,'manage',103)[0].recorded_at,100);
 assert.equal(memory.remove(storage,'manage',managed[0],103),false);
 console.log('PASS memory inspection and single-record removal preserve project isolation');
+// An earlier system clock must not silently erase valid future-dated records.
+save(storage,'clock',evidence,800);save(storage,'clock',twoHashes,1000);
+const clockKey='stefano_learning_v1_clock',beforeClock=values.get(clockKey);
+assert.equal(save(storage,'clock',{...evidence,hashes:{'c.cjs':'c'.repeat(64)}},900),false);
+assert.equal(values.get(clockKey),beforeClock);
+assert.equal(memory.remove(storage,'clock',memory.list(storage,'clock',900)[0],900),false);
+assert.equal(values.get(clockKey),beforeClock);
+assert.equal(memory.list(storage,'clock',1001).length,2);
+assert.equal(save(storage,'clock',{...evidence,hashes:{'c.cjs':'c'.repeat(64)}},1001),true);
+assert.equal(memory.list(storage,'clock',1002).length,3);
+console.log('PASS clock rollback preserves existing records on save and removal');

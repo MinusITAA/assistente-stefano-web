@@ -22,7 +22,7 @@
      }
      const files=document.createElement('p');files.textContent='File verificati: '+Object.keys(record.hashes).join(', ');card.append(files);
      const forget=document.createElement('button');forget.type='button';forget.textContent='Dimentica questo ricordo';
-     forget.addEventListener('click',()=>{try{StefanoLearningEvidence.remove(localStorage,id,record);render();}catch{content.textContent='Impossibile aggiornare la memoria locale.';}});card.append(forget);content.append(card);
+     forget.addEventListener('click',()=>{try{if(!StefanoLearningEvidence.remove(localStorage,id,record)){render();const notice=document.createElement('p');notice.textContent='Ricordo non rimosso. Aggiorna l’elenco e controlla l’orologio del dispositivo.';content.prepend(notice);return;}render();}catch{content.textContent='Impossibile aggiornare la memoria locale.';}});card.append(forget);content.append(card);
     }
    }catch{content.textContent='Memoria locale non disponibile.';}
   }
@@ -30,3 +30,4 @@
   anchor.closest('details').after(panel);
  });
 })();
+
