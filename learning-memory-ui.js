@@ -18,7 +18,7 @@
      const card=document.createElement('div');card.className='panel small';card.style.display='block';
      const text=document.createElement('p');text.textContent=record.total+' test superati il '+new Date(record.recorded_at).toLocaleString('it-IT')+'. Scade il '+new Date(record.expires_at).toLocaleString('it-IT')+'.';card.append(text);
      for(const research of record.researches)for(const source of research.sources){
-      const row=document.createElement('p'),link=document.createElement('a');link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent=source.url;row.append(link);card.append(row);
+      const row=document.createElement('p'),link=document.createElement('a');link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';link.style.color='#a8c9ff';link.textContent=source.url;row.append(link);card.append(row);
      }
      const files=document.createElement('p');files.textContent='File verificati: '+Object.keys(record.hashes).join(', ');card.append(files);
      const forget=document.createElement('button');forget.type='button';forget.textContent='Dimentica questo ricordo';
