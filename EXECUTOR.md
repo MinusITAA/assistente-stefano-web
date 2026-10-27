@@ -1,5 +1,7 @@
 # Esecutore locale di Assistente Stefano
 
+Aggiornamento 0.1.4: la lettura oscura anche credenziali brevi e valori con caratteri escapati. Per aggiornare conserva workspace, .history e config.json e riavvia il programma locale. Il filtraggio non rileva ogni possibile segreto.
+
 Aggiornamento 0.1.2: decodifica UTF-8 dopo aver raccolto tutti i pacchetti HTTP, per conservare euro, accenti ed emoji nei file. Input UTF-8 non valido e richieste oltre 280.000 byte vengono rifiutati prima di scrivere. Porta e permessi restano quelli di 0.1.1. Questa versione del programma locale richiede aggiornamento e riavvio sul PC; la pubblicazione dello ZIP non aggiorna un processo gia in esecuzione.
 
 I sorgenti dell'esecutore sono disponibili nella cartella `executor`. Eseguire `node verify-all.cjs` dalla radice per i controlli automatici. La pipeline Regression checks esegue la stessa suite su Windows e Linux senza chiavi API; non sostituisce il collaudo del sito e del programma installato.
@@ -36,3 +38,4 @@ Provati realmente con file sintetici: scrittura e rilettura, backup, JSON valido
 Limiti del collaudo: l'ambiente Codex corrente impedisce connessioni al socket locale e creazione di junction Windows. Il test junction è esplicitamente saltato. Trasporto browser↔servizio, browser Playwright e abbinamento sul PC reale NON ancora verificati. Non dichiarare l'esecutore operativo prima di quel collaudo. La cartella dedicata non è una VM: non usarla come sandbox per programmi ostili e non consentire ad altri processi di sostituirla con link mentre l'esecutore è attivo.
 
 Fonti implementative: https://playwright.dev/docs/api/class-browsercontext e https://supabase.com/docs/guides/functions/secrets.
+
