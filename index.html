@@ -1544,10 +1544,12 @@ async function showRouterStatus(){
 async function showGraphicsStudio(){
  try{
   const j=await api('graphics_studio_info');
-  alert(`GRAPHICS STUDIO — FULL 2.8
+  const imageEdit=await api('graphics_image_edit_status');
+  alert(`GRAPHICS STUDIO
 
 Profilo: ${j.profile?.name||'Macrodental'}
-Motore: template deterministici professionali
+Creazione volantini: layout HTML
+Modifica dell’originale: ${imageEdit.available?"AI attiva — "+imageEdit.model:"in attesa di attivazione del modello immagini"}
 Prompt: breve
 Template: ${(j.templates||[]).join(' • ')}
 
