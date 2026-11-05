@@ -1,7 +1,7 @@
 const {spawnSync}=require('node:child_process');
 const suites=[
  'verify-autonomy.cjs','verify-completion.cjs','verify-executor.cjs',
- 'verify-executor-port.cjs','verify-graphics.cjs','verify-lab.cjs',
+ 'verify-executor-port.cjs','verify-graphics.cjs','verify-image-edit.cjs','verify-lab.cjs',
  'verify-router-status.cjs','verify-security.cjs','verify-web-learning.cjs',
  'verify-web-learning-ui.cjs','verify-web-search.cjs','verify-learning-evidence.cjs'
 ];
