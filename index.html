@@ -1290,6 +1290,68 @@ async function runConnectedExecutor(text,files,wait){
  finally{setAutoJobStatus('',false);}
 }
 
+function isOriginalFlyerEdit(text,files){
+ if(/^\s*(?:crea|fammi|genera|prepara)\b/i.test(text)&&!/(?:mantieni|lascia\s+invariat|non\s+cambiare|modifica|sostituisci|cambia)/i.test(text))return false;
+ const hasImage=(files||[]).some(f=>f.kind==='image'&&/^data:image\/(png|jpeg|webp);base64,/i.test(f.dataUrl||''));
+ return hasImage&&/\b(cambia|cambiare|sostituisci|sostituire|modifica|modificare|correggi|correggere|rinomina|rimuovi|elimina|togli|aggiungi|inserisci)\b/i.test(text)&&/\b(scritta|scritte|testo|testi|titolo|nome|prezzo|prezzi|data|date|parola|frase|colore|logo|volantino|immagine)\b/i.test(text);
+}
+
+async function openOriginalFlyerEditor(text,files){
+ const choices=(files||[]).filter(f=>f.kind==='image'&&/^data:image\/(png|jpeg|webp);base64,/i.test(f.dataUrl||''));
+ if(!choices.length)return;
+ const dialog=document.createElement('dialog');
+ dialog.style.cssText='width:min(1100px,96vw);max-height:94vh;overflow:auto;background:#f6f9fc;color:#102b48;border:1px solid #83bbdd;border-radius:16px;padding:20px';
+ const make=(tag,txt,parent=dialog)=>{const n=document.createElement(tag);if(txt)n.textContent=txt;parent.appendChild(n);return n;};
+ make('h2','Modifica il volantino originale');
+ make('p','Trascina un rettangolo sulla scritta da sostituire. Regola testo, dimensione e colori, poi controlla l’anteprima. Solo la zona selezionata viene modificata.');
+ const source=make('select');source.setAttribute('aria-label','Volantino originale');
+ choices.forEach((f,i)=>{const o=make('option',f.name||'Immagine '+(i+1),source);o.value=String(i);});
+ const row=make('div');row.style.cssText='display:flex;gap:12px;flex-wrap:wrap;margin:14px 0;align-items:end';
+ const field=(label,type,value)=>{const l=make('label',label+' ',row);const n=make('input',null,l);n.type=type;n.value=value;n.setAttribute('aria-label',label);n.style.cssText='display:block;border:1px solid #a7bbce;padding:8px;max-width:100%';return n;};
+ const match=String(text).match(/\b(?:in|con)\s+[«"“]?(.+?)[»"”]?[.!]?$/i);
+ const replacement=field('Nuova scritta','text',match?.[1]||'');replacement.style.width='320px';
+ const size=field('Dimensione carattere','number','60');size.min='8';size.max='500';
+ const ink=field('Colore testo','color','#005bab');
+ const paper=field('Colore copertura','color','#ffffff');
+ const help=make('p','Nessuna zona selezionata.');help.setAttribute('role','status');
+ const canvas=make('canvas');canvas.style.cssText='display:block;max-width:100%;height:auto;border:1px solid #a7bbce;cursor:crosshair;touch-action:none;background:white';canvas.setAttribute('aria-label','Seleziona la scritta sul volantino');
+ const context=canvas.getContext('2d'),base=document.createElement('canvas'),original=base.getContext('2d');
+ let image,selection=null,start=null,ready=false,loading=0;
+ const buttons=make('div');buttons.style.cssText='display:flex;gap:12px;margin-top:14px;flex-wrap:wrap';
+ const reset=make('button','Azzera selezione',buttons),save=make('button','Esporta PNG modificato',buttons),close=make('button','Chiudi',buttons);save.disabled=true;
+ function paint(out,outline){
+   out.clearRect(0,0,canvas.width,canvas.height);out.drawImage(base,0,0);
+   if(!selection)return;
+   const {x,y,w,h}=selection;
+   out.save();out.beginPath();out.rect(x,y,w,h);out.clip();out.fillStyle=paper.value;out.fillRect(x,y,w,h);
+   let font=Math.max(8,Math.min(500,Number(size.value)||60));out.font='900 '+font+'px Arial';
+   while(out.measureText(replacement.value).width>w-8&&font>8){font--;out.font='900 '+font+'px Arial';}
+   out.fillStyle=ink.value;out.textAlign='center';out.textBaseline='middle';out.fillText(replacement.value,x+w/2,y+h/2);out.restore();
+   if(outline){out.save();out.strokeStyle='#ff5c00';out.lineWidth=Math.max(1,canvas.width/700);out.setLineDash([8,5]);out.strokeRect(x,y,w,h);out.restore();}
+ }
+ function refresh(){paint(context,true);save.disabled=!ready||!selection||selection.w<4||selection.h<4||!replacement.value.trim();}
+ async function load(){
+   const token=++loading;ready=false;save.disabled=true;selection=null;
+   image=new Image();const candidate=image;
+   candidate.onload=()=>{if(token!==loading)return;canvas.width=base.width=candidate.naturalWidth;canvas.height=base.height=candidate.naturalHeight;original.drawImage(candidate,0,0);ready=true;help.textContent=canvas.width+' × '+canvas.height+' px — seleziona la scritta con il mouse.';refresh();};
+   candidate.onerror=()=>{if(token===loading)help.textContent='Immagine non leggibile. Scegli un altro allegato.';};candidate.src=choices[Number(source.value)].dataUrl;
+ }
+ const point=e=>{const r=canvas.getBoundingClientRect();return {x:Math.max(0,Math.min(canvas.width,(e.clientX-r.left)*canvas.width/r.width)),y:Math.max(0,Math.min(canvas.height,(e.clientY-r.top)*canvas.height/r.height))};};
+ canvas.onpointerdown=e=>{if(!ready)return;start=point(e);canvas.setPointerCapture(e.pointerId);};
+ canvas.onpointermove=e=>{if(!start)return;const p=point(e);selection={x:Math.floor(Math.min(start.x,p.x)),y:Math.floor(Math.min(start.y,p.y)),w:Math.ceil(Math.abs(p.x-start.x)),h:Math.ceil(Math.abs(p.y-start.y))};refresh();};
+ canvas.onpointerup=e=>{if(!start)return;start=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);help.textContent=selection?'Zona selezionata: '+selection.w+' × '+selection.h+' px. La copertura sostituisce anche lo sfondo in questa zona: controlla il colore.':'Seleziona una zona.';refresh();};
+ canvas.onpointercancel=()=>{start=null;};
+ for(const n of [replacement,size,ink,paper])n.oninput=refresh;
+ source.onchange=load;reset.onclick=()=>{selection=null;start=null;help.textContent='Seleziona di nuovo la scritta.';refresh();};
+ save.onclick=async()=>{
+   if(save.disabled)return;save.disabled=true;
+   try{const output=document.createElement('canvas');output.width=canvas.width;output.height=canvas.height;paint(output.getContext('2d'),false);const blob=await canvasToBlob(output,'image/png',1);const name=baseNameNoExt(choices[Number(source.value)].name||'volantino');addBlobDownload(name+'_modificato.png',blob);setStatus('PNG modificato creato nelle dimensioni originali.');help.textContent='PNG creato. Il volantino originale resta allegato.';}
+   catch(e){help.textContent='Esportazione non riuscita: '+(e?.message||String(e));}
+   finally{refresh();}
+ };
+ const dismiss=()=>{dialog.close();dialog.remove();};close.onclick=dismiss;dialog.addEventListener('cancel',e=>{e.preventDefault();dismiss();});document.body.appendChild(dialog);dialog.showModal();await load();
+}
+
 let sending=false;
 async function sendMsg(){
  if(sending)return;
@@ -1302,6 +1364,7 @@ async function sendMsgCore(){
  if(!text&&!attached.length)return;
 
  const filesSnapshot=[...attached];
+ if(isOriginalFlyerEdit(text,filesSnapshot)){await openOriginalFlyerEditor(text,filesSnapshot);return;}
  $('input').value='';
  add('user',text||'[Analizza allegati]');
  const useAutonomous=$('autonomous').checked||($('smartAuto').checked&&shouldUseAutonomous(text,filesSnapshot,$('mode').value));
