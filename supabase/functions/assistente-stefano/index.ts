@@ -2441,7 +2441,8 @@ async function learnFromFeedback(messageId:any,rating:number,note:string){
 }
 
 // OpenRouter Image API. Keep credentials and model selection on the server.
-function createGraphicsImageEditor(config: {key:string;model:string}, request:typeof fetch=fetch){
+function createGraphicsImageEditor(config: {key:string;model:string}, request?:typeof fetch){
+ const send=(...args:Parameters<typeof fetch>)=>(request||fetch)(...args);
  const status=()=>({available:Boolean(config.key&&config.model),provider:'openrouter',model:config.model||null});
  function fail(message:string,statusCode=400):never{throw Object.assign(new Error(message),{statusCode});}
  function raster(dataUrl:unknown,maxBytes:number){
@@ -2465,7 +2466,7 @@ function createGraphicsImageEditor(config: {key:string;model:string}, request:ty
    if(!status().available)fail('Modifica immagini automatica non attiva: configurare il modello immagini e OpenRouter sul server.',503);
    // Read-only discovery: do not submit or bill a generation to a text-only model.
    let models:Response;
-   try{models=await request('https://openrouter.ai/api/v1/images/models',{headers:{Authorization:'Bearer '+config.key},signal:AbortSignal.timeout(12000)});}
+   try{models=await send('https://openrouter.ai/api/v1/images/models',{headers:{Authorization:'Bearer '+config.key},signal:AbortSignal.timeout(12000)});}
    catch{fail('Catalogo dei modelli immagini non raggiungibile. Nessuna generazione avviata.',503);}
    if(!models.ok)fail('Impossibile verificare il modello immagini (HTTP '+models.status+'). Nessuna generazione avviata.',503);
    let catalog:any;try{catalog=await models.json();}catch{fail('Catalogo modelli non valido. Nessuna generazione avviata.',502);}
@@ -2473,7 +2474,7 @@ function createGraphicsImageEditor(config: {key:string;model:string}, request:ty
    if(!model?.architecture?.input_modalities?.includes('image')||!model?.architecture?.output_modalities?.includes('image'))fail('Il modello configurato non supporta immagini in ingresso e in uscita.',422);
    const prompt='MODIFICA L’IMMAGINE ORIGINALE ALLEGATA. Non creare un nuovo volantino e non inserire l’originale come miniatura. Applica soltanto la modifica richiesta. Mantieni composizione, proporzioni, foto, loghi, prezzi e tutte le altre scritte invariati salvo quanto richiesto. Ricostruisci lo sfondo dietro al testo sostituito e imita stile, allineamento e carattere originali. Non stampare le istruzioni nel volantino. Non aggiungere slogan, caratteristiche, contatti, cornici o marchi. Restituisci una sola immagine completa.\nRICHIESTA UTENTE:\n'+message;
    let response:Response;
-   try{response=await request('https://openrouter.ai/api/v1/images',{
+   try{response=await send('https://openrouter.ai/api/v1/images',{
      method:'POST',headers:{Authorization:'Bearer '+config.key,'Content-Type':'application/json'},
      body:JSON.stringify({model:config.model,prompt,n:1,output_format:'png',input_references:[{type:'image_url',image_url:{url:source.dataUrl}}]}),
      signal:AbortSignal.timeout(110000)
