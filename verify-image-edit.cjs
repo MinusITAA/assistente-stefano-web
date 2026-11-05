@@ -1,0 +1,20 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),vm=require('node:vm'),{stripTypeScriptTypes}=require('node:module');
+const path=process.argv[2]||require('node:path').join(__dirname,'supabase/functions/assistente-stefano/index.ts');
+const backend=fs.readFileSync(path,'utf8');
+const helper=backend.slice(backend.indexOf('function createGraphicsImageEditor'),backend.indexOf('const graphicsImageEditor='));
+const ctx=vm.createContext({fetch,Response,AbortSignal,atob});vm.runInContext(stripTypeScriptTypes(helper),ctx);
+const png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jO9sAAAAASUVORK5CYII=';
+const input={message:'Cambia SINERGIA DISK TEMPO MULTI in PROVA MODIFICA',files:[{kind:'image',name:'originale.png',dataUrl:'data:image/png;base64,'+png}]};
+const catalog={data:[{id:'test/edit',architecture:{input_modalities:['text','image'],output_modalities:['image']}}]};
+const good={data:[{b64_json:png,media_type:'image/png'}],usage:{cost:0.01}};
+function editor(responses,config={key:'test-key',model:'test/edit'}){const calls=[];const e=ctx.createGraphicsImageEditor(config,async(url,options)=>{calls.push({url,options});const next=responses.shift();if(next instanceof Error)throw next;return new Response(JSON.stringify(next?.body??next),{status:next?.status||200})});return {...e,calls};}
+test('disabled configuration never submits a generation',async()=>{const e=editor([],{key:'',model:''});assert(!e.status().available);await assert.rejects(e.edit(input),/non attiva/);assert.equal(e.calls.length,0)});
+test('invalid image and multiple originals are rejected before network',async()=>{const e=editor([]);await assert.rejects(e.edit({...input,files:[input.files[0],input.files[0]]}),/solo/);await assert.rejects(e.edit({...input,files:[{kind:'image',dataUrl:'https://example.com/original.png'}]}),/valida/);await assert.rejects(e.edit({...input,files:[{kind:'image',dataUrl:'data:image/png;base64,'+btoa('<html>fake</html>')}]}),/formato/);assert.equal(e.calls.length,0)});
+test('text-only model cannot be billed as an edit',async()=>{const e=editor([{data:[{id:'test/edit',architecture:{input_modalities:['image'],output_modalities:['text']}}]}]);await assert.rejects(e.edit(input),/non supporta/);assert.equal(e.calls.length,1)});
+test('sends original as reference and returns provider image without HTML',async()=>{const e=editor([catalog,good]);const result=await e.edit(input);const sent=JSON.parse(e.calls[1].options.body);assert.equal(sent.input_references[0].image_url.url,input.files[0].dataUrl);assert(sent.prompt.includes(input.message));assert.equal(sent.n,1);assert.equal(e.calls[1].options.headers.Authorization,'Bearer test-key');assert.equal(result.image.dataUrl,input.files[0].dataUrl);assert.equal(result.image.name,'originale_modificato.png');assert(!JSON.stringify(result).includes('test-key'));assert.equal(result.cost_usd,0.01)});
+test('credit failure does not retry or fall back',async()=>{const e=editor([catalog,{status:402}]);await assert.rejects(e.edit(input),e=>e.statusCode===402);assert.equal(e.calls.length,2)});
+test('text-only response cannot become a successful flyer',async()=>{const e=editor([catalog,{choices:[{message:{content:'<html>new flyer</html>'}}]}]);await assert.rejects(e.edit(input),/non ha restituito/);assert.equal(e.calls.length,2)});
+test('upstream interruption does not duplicate a potentially billable request',async()=>{const e=editor([catalog,new Error('secret provider error')]);await assert.rejects(e.edit(input),e=>e.statusCode===504&&!e.message.includes('secret'));assert.equal(e.calls.length,2)});
+test('image route remains behind existing app authentication',()=>{assert(backend.indexOf('body.password!==APP_PASSWORD')<backend.indexOf('if(action==="graphics_image_edit")'))});
