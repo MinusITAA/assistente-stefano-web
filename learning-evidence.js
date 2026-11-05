@@ -22,6 +22,8 @@
    const tool=o?.action?.tool,r=o?.result;
    if(tool==='files.write'||tool==='javascript.test')evidence=null;
    if(tool==='files.write')pendingWrites.add(o.action.path);
+   // A later syntax check failure invalidates the current learning candidate.
+   if(tool==='javascript.check'&&(o?.error||r?.passed===false||r?.error))evidence=null;
    if(o?.error||!r)continue;
    if(tool==='web.research'&&r.record?.kind==='web_research'&&Array.isArray(r.record.sources)){
     const sources=r.record.sources.filter(s=>{try{const u=new URL(s.url);return u.protocol==='https:'&&!u.username&&!u.password;}catch{return false;}}).map(s=>({url:s.url,retrieved_at:s.retrieved_at}));
@@ -77,3 +79,4 @@
  }
  const api={build,save,recall,list,remove};if(typeof module!=='undefined')module.exports=api;else root.StefanoLearningEvidence=api;
 })(typeof window==='undefined'?this:window);
+
