@@ -403,16 +403,7 @@ async function gsRunPhotoSearch(query){
 
 
 async function materializeGraphicsStudio(files,userText,filesSnapshot){
- files=(files||[]).map(file=>{
-  if(!/\.html$/i.test(String(file?.name||''))||typeof file.content!=='string')return file;
-  // Aggiorna solo il vecchio template Macrodental, non HTML arbitrari.
-  const marker='.page.no-photo .offer{margin-top:12mm;min-height:90mm;';
-  if(!file.content.includes(marker)||!file.content.includes('Macrodental')||!file.content.includes('.wordmark'))return file;
-  const css='.page.no-photo .offer{margin-top:10mm;min-height:0;padding:9mm 10mm;flex-direction:row;align-items:center;justify-content:space-between;gap:6mm;border-radius:3mm}.page.no-photo .note{text-align:right;max-width:60mm;font-size:12pt}.page.no-photo .price{font-size:44pt}.page.no-photo .features{display:block;min-height:0;padding:7mm 8mm;background:#f2f7fa;border-left:2mm solid #087dbd}.page.no-photo .feature{border:0;padding:2mm 0;font-size:13pt}.page.no-photo .footer{margin-top:12mm}.page.no-photo{justify-content:center}';
-  const content=file.content.replace(/\.page\.no-photo \.offer\{margin-top:12mm;min-height:90mm;[^}]*\}/, '')
-   .replace('</style>',css+'</style>');
-  return {...file,content};
- });
+ files=(files||[]).map(normalizeGraphicsStudioHtml);
  const specFile=(files||[]).find(isGraphicsStudioSpecFile);
  if(!specFile)return files||[];
  const spec=parseGraphicsStudioSpecFile(specFile);
@@ -428,6 +419,17 @@ async function materializeGraphicsStudio(files,userText,filesSnapshot){
  const html=graphicsStudioRenderHTML(spec);
  const base=(spec.product_name||spec.title||"volantino_macrodental").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,70)||"volantino_macrodental";
  return [{name:`${base}.html`,content:html},...(files||[]).filter(f=>!isGraphicsStudioSpecFile(f))];
+}
+
+function normalizeGraphicsStudioHtml(file){
+  if(!/\.html$/i.test(String(file?.name||''))||typeof file.content!=='string')return file;
+  // Aggiorna solo il vecchio template Macrodental, non HTML arbitrari.
+  const marker='.page.no-photo .offer{margin-top:12mm;min-height:90mm;';
+  if(!file.content.includes(marker)||!file.content.includes('Macrodental')||!file.content.includes('.wordmark'))return file;
+  const css='.page.no-photo .offer{margin-top:10mm;min-height:0;padding:9mm 10mm;flex-direction:row;align-items:center;justify-content:space-between;gap:6mm;border-radius:3mm}.page.no-photo .note{text-align:right;max-width:60mm;font-size:12pt}.page.no-photo .price{font-size:44pt}.page.no-photo .features{display:block;min-height:0;padding:7mm 8mm;background:#f2f7fa;border-left:2mm solid #087dbd}.page.no-photo .feature{border:0;padding:2mm 0;font-size:13pt}.page.no-photo .footer{margin-top:12mm}.page.no-photo{justify-content:center}';
+  const content=file.content.replace(/\.page\.no-photo \.offer\{margin-top:12mm;min-height:90mm;[^}]*\}/, '')
+   .replace('</style>',css+'</style>');
+  return {...file,content};
 }
 
 const graphicsScriptLoads=new Map();
@@ -513,6 +515,8 @@ function baseNameNoExt(name){
 }
 
 async function renderHtmlPagesToCanvases(file){
+ // Apply at the export boundary too: callers can bypass materialization.
+ file=normalizeGraphicsStudioHtml(file);
  await ensureGraphicsRenderer(false);
 
  const iframe=document.createElement('iframe');
@@ -708,6 +712,8 @@ async function maybeAutoRenderGraphics(userText,files){
 }
 
 function addDownload(f){
+ // Download, preview and export must all use the same normalized artifact.
+ f=normalizeGraphicsStudioHtml(f);
  generatedCache.push(f);
  const d=document.createElement('div');d.className='download';
  const title=document.createElement('b');title.textContent='📄 '+f.name;d.appendChild(title);
