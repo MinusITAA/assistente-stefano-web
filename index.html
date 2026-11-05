@@ -425,7 +425,7 @@ async function materializeGraphicsStudio(files,userText,filesSnapshot){
  spec.product_images=pictures.filter(f=>!/logo|marchio/i.test(f.name)).slice(0,4);
  spec.logo_image=pictures.find(f=>/logo|marchio/i.test(f.name))?.dataUrl||'';
  if(!spec.product_images.length && $('autoPhoto')?.checked && !/senza\s+(?:foto|immagini)|non\s+cercare/i.test(userText)){
-   const query=gsPhotoQuery(userText).split(/[;!]|[,.](?=\s|$)/)[0].trim()||gsPhotoQuery(spec.product_name);
+   const query=gsPhotoQuery(spec.product_name||spec.title||'').trim()||gsPhotoQuery(userText).split(/[;!]|[,.](?=\s|$)/)[0].trim();
    if(query.length>=3){try{const photo=await gsFindWebPhoto(query,true);if(photo){spec.product_images=[{name:query,dataUrl:photo.dataUrl}];spec.image_source=photo.source_url;}}catch(e){add('assistant','Ricerca foto non disponibile: procedo con il layout senza foto.');}}
  }
 
